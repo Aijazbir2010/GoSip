@@ -1,0 +1,13 @@
+* {
+    font-family: 'Roboto', sans-serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* For Preventing Scroll When Any Modal Is Open */
+
+.no-scroll {
+    overflow: hidden;
+}
