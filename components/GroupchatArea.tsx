@@ -342,13 +342,13 @@ const GroupchatArea = () => {
               </div>
           </div>
   
-          <div className="main-chat-area w-full h-full max-h-full overflow-y-auto no-scrollbar flex flex-col gap-2 px-3 md:px-5">
+          <div className="main-chat-area w-full h-full max-h-full overflow-y-auto no-scrollbar flex flex-col gap-4 px-3 md:px-5">
               {messages.map((message, index) => (<div key={index} className={`message-container w-full flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`message flex flex-col gap-1 w-full ${message.sender === 'me' ? 'items-end' : 'items-start'}`}>
                       <div>
                           <span className={`${message.sender === 'me' ? 'text-themeTextGray' : 'text-[#E050FF]'} text-xs`}>{message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}, {message.time}</span>
                       </div>
-                      <div className={`${message.sender === 'me' ? 'bg-themeBlue text-white' : 'bg-themeInputBg text-themeBlack'} px-4 py-4 w-fit max-w-[50%] rounded-xl text-xl xl:text-2xl`}>
+                      <div className={`${message.sender === 'me' ? 'bg-themeBlue text-white' : 'bg-themeInputBg text-themeBlack'} px-4 py-4 w-fit max-w-[80%] rounded-xl text-xl xl:text-2xl`}>
                           {message.message}
                       </div>
                   </div>

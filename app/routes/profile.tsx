@@ -24,31 +24,12 @@ export const meta: MetaFunction = () => {
 const nameValidationSchema = Yup.object().shape({
     name: Yup.string()
     .min(3, 'Name must be at least 3 characters')
-    .max(20, 'Name cannot exceed 20 characters')
+    .max(16, 'Name cannot exceed 16 characters')
     .required('Name is required !')
-    .matches(/^[a-zA-Z0-9]+$/, 'Only Letters and Numbers are allowed')
-});
-
-const passkeyValidationSchema = Yup.object().shape({
-    passkey: Yup.string()
-      .min(6, 'Passkey must be atleast 6 characters')
-      .max(20, 'Passkey cannot exceed 20 characters')
-      .required('Passkey is required !')  
+    .matches(/^[a-zA-Z]*$/, 'Only Letters are allowed !')
 });
 
 const Profile = () => {
-
-  const [isPasskeyVisible, setIsPasskeyVisible] = useState(false)
-  const [isPasskeyInfoVisible, setIsPasskeyInfoVisible] = useState(false)
-  const [shouldRenderPasskeyInfoDiv, setShouldRenderPasskeyInfoDiv] = useState(false)
-
-  useEffect(() => {
-    if (isPasskeyInfoVisible) {
-        setShouldRenderPasskeyInfoDiv(true)
-    } else {
-        setTimeout(() => setShouldRenderPasskeyInfoDiv(false), 300)
-    }
-  }, [isPasskeyInfoVisible])
 
   const {
         register: nameFormRegister,
@@ -59,20 +40,7 @@ const Profile = () => {
         mode: 'onChange',
   });
 
-  const {
-        register: passkeyFormRegister,
-        handleSubmit: handlePasskeySubmit,
-        formState: { errors: passkeyErrors },
-      } = useForm({
-        resolver: yupResolver(passkeyValidationSchema),
-        mode: 'onChange',
-  });
-
   const changeName = async (data: {name: string}) => {
-    console.log(data)
-  }
-
-  const createPasskey = async (data: {passkey: string}) => {
     console.log(data)
   }
 
@@ -108,36 +76,18 @@ const Profile = () => {
                     <span className="text-lg text-themeBlue font-bold px-4">GoSip ID</span>
                     <div className="flex flex-row items-center gap-4 px-4 h-16 w-full rounded-2xl bg-themeInputBg">
                         <img src="/GoSipLogo.svg" alt="GoSip Logo" className="w-9 h-9"/>
-                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="GoSip ID" value={"GS-93C572"} readOnly={true} disabled={true}/>
+                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="GoSip ID" value={"GS-93C572-93C572"} readOnly={true}/>
                         <i className="fa-regular fa-clone fa-xl text-themeBlack cursor-pointer hover:text-themeBlue transition-colors duration-300"></i>
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2 w-[90%] xl:w-[60%]">
-                    <span className="text-lg text-themeBlue font-bold px-4">Phone Number</span>
+                    <span className="text-lg text-themeBlue font-bold px-4">E-mail</span>
                     <div className="flex flex-row items-center gap-4 px-4 h-16 w-full rounded-2xl bg-themeInputBg">
-                        <i className="fa-solid fa-phone fa-xl text-themeTextGray"></i>
-                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Phone Number" value={"6284523190"} readOnly={true} disabled={true}/>
+                        <i className="fa-solid fa-envelope fa-xl text-themeTextGray"></i>
+                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="E-mail" value={"aijazbirsfun@gmail.com"} readOnly={true}/>
                     </div>
                 </div>
-
-                <form className="flex flex-col gap-2 w-[90%] xl:w-[60%] relative" onSubmit={handlePasskeySubmit(createPasskey)}>
-                    <div className="flex flex-row items-center gap-2 px-4">
-                        <span className="text-lg text-themeBlue font-bold">Passkey</span>
-                        <i className="fa-solid fa-circle-info text-themeBlue cursor-pointer" onMouseEnter={() => setIsPasskeyInfoVisible(true)} onMouseLeave={() => setIsPasskeyInfoVisible(false)}></i>
-                    </div>
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-full rounded-2xl bg-themeInputBg ${passkeyErrors.passkey ? 'border-[2px] border-red-500' : ''}`}>
-                        <i className="fa-solid fa-lock fa-xl text-themeTextGray"></i>
-                        <input type={isPasskeyVisible ? 'text' : 'password'} className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Passkey" {...passkeyFormRegister('passkey')}/>
-                        {!isPasskeyVisible ? (<i className="fa-solid fa-eye fa-xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => setIsPasskeyVisible(true)}></i>) : (<i className="fa-solid fa-eye-slash fa-xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => setIsPasskeyVisible(false)}></i>)}
-                    </div>
-                    {passkeyErrors.passkey && <p className="text-red-500 text-xs px-4">{passkeyErrors.passkey.message}</p>}
-                    <button className="w-full h-16 rounded-2xl bg-themeBlue text-white font-bold outline-none border-none hover:scale-95 transition-transform duration-300" type="submit">Create Passkey</button>
-
-                    {shouldRenderPasskeyInfoDiv && (<div className={`absolute w-full xl:w-[60%] left-0 top-0 translate-y-[-110%] rounded-2xl px-4 py-2 bg-themeBlue drop-shadow-md ${isPasskeyInfoVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
-                        <span className="text-white font-bold text-xl">Your passkey is a unique identifier for secure and instant access to your GoSip account. Once created, it cannot be changed, so keep it safe and confidential !</span>
-                    </div>)}
-                </form>
 
                 <div className="w-[90%] xl:w-[60%]">
                     <button className="w-full h-16 rounded-2xl text-white font-bold bg-themeBlack border-none outline-none hover:bg-themeRed transition-colors duration-300">Logout</button>

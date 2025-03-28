@@ -32,48 +32,25 @@ export const meta: MetaFunction = () => {
 };
 
 const registerValidationSchema = Yup.object().shape({
-    phoneNumber: Yup.string()
-      .matches(/^[0-9]+$/, 'Phone number must contain only digits')
-      .min(10, 'Phone number must be at least 10 digits')
-      .max(15, 'Phone number cannot exceed 15 digits')
-      .required('Phone number is required !'),
+    name: Yup.string()
+      .matches(/^[a-zA-Z]*$/, "Only letters are allowed !")
+      .min(3, 'Name must be atleast 3 characters')
+      .max(16, 'Name cannot exceed 16 characters')
+      .required('Name is required !'),  
+    email: Yup.string()
+      .email('Enter a Valid E-mail !')
+      .required('E-mail is required !'),
+    password: Yup.string()
+      .matches(/^[a-zA-Z0-9]*$/, 'Only letters and numbers are allowed !')
+      .min(6, 'Password must be atleast 6 characters !')
+      .max(20, 'Password cannot exceed 20 characters !')
+      .required('Password is required !'),  
     code: Yup.string()
       .length(6, 'Code must be exactly 6 characters')
       .required('Code is required !')  
 });
 
-export const loader = async () => {
-    try {
-        const response = await fetch('https://countriesnow.space/api/v0.1/countries/info?returns=flag,dialCode,')
-        const responseData = await response.json()
-
-        const countries = responseData.data.map((country: any) => ({flag: country.flag, name: country.name, countryCode: country.dialCode?.includes('+') ? `${country.dialCode}` : `+${country.dialCode}`})).sort((a: any, b: any) => a.name.localeCompare(b.name))
-
-        return json(countries) 
-    } catch (err) {
-        console.log(err)
-        return redirect('/')
-    }
-}
-
 const register = () => {
-
-  const countriesData = useLoaderData<typeof loader>()  
-
-  const [selectedCountry, setSelectedCountry] = useState<{name: string, flag?: string | undefined, countryCode: string} | null>(null)
-  const [countries, setCountries] = useState<any[] | null>(null)
-
-  useEffect(() => {
-    if (countriesData) {
-        setCountries(countriesData)
-        setSelectedCountry({name: countriesData[100].name, countryCode: countriesData[100].countryCode, flag: countriesData[100].flag})
-    }
-  }, [countriesData])  
-
-  const handleCountryChange = (countryName: string) => {
-    const country = countries?.find((country) => country.name === countryName)
-    setSelectedCountry(country)
-  }
 
   const {
     register: registerFormRegister,
@@ -86,11 +63,11 @@ const register = () => {
     mode: 'onChange',
   });
 
-  const phoneNumber = registerWatch('phoneNumber')
-
-  const registerUser = async (data: {phoneNumber: string, code: string}) => {
+  const registerUser = async (data: {name: string, email: string, password: string, code: string}) => {
     console.log(data)
   }
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   return (
     <div className="w-full flex flex-col">
@@ -105,38 +82,25 @@ const register = () => {
             <span className="text-themeBlack font-black text-xl w-[95%] lg:w-[60%]">You’re just one step away from unlocking the ultimate chat experience! Register now to dive into seamless, secure, and stylish conversations with GoSip.</span>
         </div>
 
-        <div className="main bg-themeBgGray w-[95%] lg:w-[60%] h-[500px] rounded-3xl mx-auto mt-10 drop-shadow-customDropShadow flex justify-center items-center">
+        <div className="main bg-themeBgGray w-[95%] lg:w-[60%] h-[550px] rounded-3xl mx-auto mt-10 drop-shadow-customDropShadow flex justify-center items-center">
             <div className="flex flex-col gap-2">
-                {countries?.length && countries.length > 0 && selectedCountry && <Select onValueChange={handleCountryChange}>
-                    <SelectTrigger>
-                        <SelectValue placeholder={
-                            <div className="flex items-center">
-                                <img src={selectedCountry.flag} alt="flag" className="w-10 rounded-sm" />
-                                <span className="ml-3">{selectedCountry.name}</span>
-                                <span className="ml-3">{selectedCountry.countryCode}</span>
-                            </div>
-                        }>
-                            <div className="flex items-center">
-                                <img src={selectedCountry.flag} alt="flag" className="w-10 rounded-sm" />
-                                <span className="ml-3">{selectedCountry.name}</span>
-                                <span className="ml-3">{selectedCountry.countryCode}</span>
-                            </div>
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {countries.map((country, index) => (<SelectItem key={index} value={country.name}>
-                            <img src={country.flag} alt="flag" className="w-10 rounded-sm inline-block"/>
-                            <span className="ml-3">{country.name}</span>
-                            <span className="ml-3">{country.countryCode}</span>
-                        </SelectItem>))}
-                    </SelectContent>
-                </Select>}
                 <form className="flex flex-col gap-2" onSubmit={handleRegisterSubmit(registerUser)}>
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.phoneNumber ? 'border-[2px] border-red-500' : ''}`}>
-                        <i className="fa-solid fa-phone fa-lg text-themeTextGray"></i>
-                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Phone Number" {...registerFormRegister('phoneNumber')}/>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.name ? 'border-[2px] border-red-500' : ''}`}>
+                        <i className="fa-solid fa-user fa-lg text-themeTextGray"></i>
+                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Name" {...registerFormRegister('name')}/>
                     </div>
-                    {registerErrors.phoneNumber && <p className="text-red-500 text-xs px-4">{registerErrors.phoneNumber.message}</p>}
+                    {registerErrors.name && <p className="text-red-500 text-xs px-4">{registerErrors.name.message}</p>}
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.email ? 'border-[2px] border-red-500' : ''}`}>
+                        <i className="fa-solid fa-envelope fa-lg text-themeTextGray"></i>
+                        <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="E-mail" {...registerFormRegister('email')}/>
+                    </div>
+                    {registerErrors.email && <p className="text-red-500 text-xs px-4">{registerErrors.email.message}</p>}
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.password ? 'border-[2px] border-red-500' : ''}`}>
+                        <i className="fa-solid fa-lock fa-lg text-themeTextGray"></i>
+                        <input type={`${isPasswordVisible ? 'text' : 'password'}`} className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Password" {...registerFormRegister('password')}/>
+                        {isPasswordVisible ? <i className="fa-solid fa-eye-slash fa-lg text-themeBlack hover:text-themeBlue cursor-pointer transition-colors duration-300" onClick={() => setIsPasswordVisible(false)}></i> : <i className="fa-solid fa-eye fa-lg text-themeBlack hover:text-themeBlue cursor-pointer transition-colors duration-300" onClick={() => setIsPasswordVisible(true)}></i>}
+                    </div>
+                    {registerErrors.password && <p className="text-red-500 text-xs px-4">{registerErrors.password.message}</p>}
                     <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.code ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-key fa-lg text-themeTextGray"></i>
                         <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Verification Code" {...registerFormRegister('code')}/>
