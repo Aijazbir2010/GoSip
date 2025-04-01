@@ -11,3 +11,23 @@
 .no-scroll {
     overflow: hidden;
 }
+
+/* Spinner */
+
+.spinner {
+    height: 30px;
+    width: 30px;
+    border-radius: 100%;
+    border: 4px solid transparent;
+    border-top: 4px solid white;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        rotate: 0deg;
+    }
+    100% {
+        rotate: 360deg;
+    }
+}

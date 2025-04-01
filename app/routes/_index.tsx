@@ -27,7 +27,8 @@ export default function Index() {
             <div className="flex flex-col w-full lg:w-[50%] xl:w-[60%] justify-center text-center lg:text-left">
               <span className="text-themeBlack font-black text-[60px] leading-[70px] md:text-[80px] md:leading-[90px] xl:text-[100px] xl:leading-[110px]">Welcome To</span>
               <span className="text-themeBlue font-black text-[60px] leading-[70px] md:text-[80px] md:leading-[90px] xl:text-[100px] xl:leading-[110px]">GoSip</span>
-              <span className="text-base md:text-lg xl:text-xl text-themeBlack font-bold mt-5">Stay connected like never before with GoSip – the modern chat app built for effortless, secure, and real-time communication. Whether it's casual conversations or important discussions, GoSip makes chatting seamless and stylish. <span className="text-themeBlue"><a href="#">Register</a> / <a href="#">Log in</a></span> and start your journey towards futuristic messaging today!</span>
+              <span className="text-base md:text-lg xl:text-xl text-themeBlack font-bold mt-5">Stay connected like never before with GoSip – the modern chat app built for effortless, secure, and real-time communication. Whether it's casual conversations or important discussions, GoSip makes chatting seamless and stylish. <span className="text-themeBlue"><a href="/register">Register</a> / <a href="/login
+              ">Log in</a></span> and start your journey towards futuristic messaging today!</span>
             </div>
 
             <div className="w-full lg:w-[50%] xl:w-[40%] flex justify-center lg:justify-end">

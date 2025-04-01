@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "@remix-run/react";
 import Footer from "components/Footer";
+import Spinner from "@components/Spinner";
+import axiosInstance from "~/axios";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -47,12 +49,11 @@ const loginValidationSchema = Yup.object().shape({
 const login = () => {
 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+  const [isLoggingUserIn, setIsLoggingUserIn] = useState(false)
 
   const {
       register: loginFormRegister,
       handleSubmit: handleLoginSubmit,
-      watch: loginWatch,
-      setError: setLoginErrors,
       formState: { errors: loginErrors },
     } = useForm({
       resolver: yupResolver(loginValidationSchema),
@@ -60,7 +61,24 @@ const login = () => {
   });
 
   const loginUser = async (data: {identifier: string, password: string}) => {
-    console.log(data)
+    try {
+      setIsLoggingUserIn(true)
+
+      const response = await axiosInstance.post('/user/login', {
+        identifier: data.identifier,
+        password: data.password,
+      })
+
+      console.log(response)
+
+      setIsLoggingUserIn(false)
+
+      window.location.href = '/chats'
+
+    } catch (error) {
+      setIsLoggingUserIn(false)
+      console.log('Unable to log in user !', error)
+    }
   }
 
   return (
@@ -93,7 +111,7 @@ const login = () => {
 
                     <a href="/forgotpassword" className="px-4 text-themeBlack hover:text-themeBlue transition-colors duration-300">Forgot password ?</a>
 
-                    <button className="h-16 w-[340px] md:w-[400px] rounded-2xl border-none outline-none bg-themeBlue text-white font-bold hover:scale-95 transition-transform duration-300" type="submit">Send Code</button>
+                    <button className="h-16 w-[340px] md:w-[400px] flex justify-center items-center rounded-2xl border-none outline-none bg-themeBlue text-white font-bold hover:scale-95 transition-transform duration-300" type="submit">{isLoggingUserIn ? <Spinner /> : 'Log in'}</button>
                 </form>
 
                 <div className="w-full flex justify-center mt-5">

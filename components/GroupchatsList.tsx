@@ -36,7 +36,7 @@ const [createGroupModalCustomStyles, setCreateGroupModalCustomStyles] = useState
       transform: 'translate(-50%, -50%)',
       padding: '20px',
       width: '700px',
-      height: '750px',
+      height: '620px',
       backgroundColor: '#F3F4F4',
       borderRadius: '24px',
       position: 'relative' as 'relative',
@@ -134,7 +134,7 @@ const [createGroupModalCustomStyles, setCreateGroupModalCustomStyles] = useState
                 </div>
 
                 <div className="w-full flex justify-center">
-                            <ul className="w-[95%] md:w-[90%] max-h-[250px] space-y-5 overflow-y-auto no-scrollbar">
+                            <ul className="w-[95%] md:w-[90%] max-h-[120px] space-y-5 overflow-y-auto no-scrollbar">
                                 <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
                                     <div className="flex flex-row gap-3 md:gap-5 items-center">
                                         <div className="profile-pic rounded-full">
