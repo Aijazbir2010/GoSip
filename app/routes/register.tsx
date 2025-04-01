@@ -85,23 +85,23 @@ const register = () => {
         <div className="main bg-themeBgGray w-[95%] lg:w-[60%] h-[550px] rounded-3xl mx-auto mt-10 drop-shadow-customDropShadow flex justify-center items-center">
             <div className="flex flex-col gap-2">
                 <form className="flex flex-col gap-2" onSubmit={handleRegisterSubmit(registerUser)}>
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.name ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${registerErrors.name ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-user fa-lg text-themeTextGray"></i>
                         <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Name" {...registerFormRegister('name')}/>
                     </div>
                     {registerErrors.name && <p className="text-red-500 text-xs px-4">{registerErrors.name.message}</p>}
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.email ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${registerErrors.email ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-envelope fa-lg text-themeTextGray"></i>
                         <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="E-mail" {...registerFormRegister('email')}/>
                     </div>
                     {registerErrors.email && <p className="text-red-500 text-xs px-4">{registerErrors.email.message}</p>}
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.password ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${registerErrors.password ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-lock fa-lg text-themeTextGray"></i>
                         <input type={`${isPasswordVisible ? 'text' : 'password'}`} className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Password" {...registerFormRegister('password')}/>
                         {isPasswordVisible ? <i className="fa-solid fa-eye-slash fa-lg text-themeBlack hover:text-themeBlue cursor-pointer transition-colors duration-300" onClick={() => setIsPasswordVisible(false)}></i> : <i className="fa-solid fa-eye fa-lg text-themeBlack hover:text-themeBlue cursor-pointer transition-colors duration-300" onClick={() => setIsPasswordVisible(true)}></i>}
                     </div>
                     {registerErrors.password && <p className="text-red-500 text-xs px-4">{registerErrors.password.message}</p>}
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${registerErrors.code ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${registerErrors.code ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-key fa-lg text-themeTextGray"></i>
                         <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Verification Code" {...registerFormRegister('code')}/>
                     </div>

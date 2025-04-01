@@ -79,12 +79,12 @@ const login = () => {
         <div className="main bg-themeBgGray w-[95%] lg:w-[60%] h-[500px] rounded-3xl mx-auto mt-10 drop-shadow-customDropShadow flex justify-center items-center">
             <div className="flex flex-col gap-2 items-center">
                 <form className="flex flex-col gap-2" onSubmit={handleLoginSubmit(loginUser)}>
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${loginErrors.identifier ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${loginErrors.identifier ? 'border-[2px] border-red-500' : ''}`}>
                         <img src="/GoSipLogo.svg" alt="GoSip Logo" className="w-8 h-8"/>
                         <input type="text" className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="E-mail or GoSip ID" {...loginFormRegister('identifier')}/>
                     </div>
                     {loginErrors.identifier && <p className="text-red-500 text-xs px-4">{loginErrors.identifier.message}</p>}
-                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl bg-themeInputBg ${loginErrors.password ? 'border-[2px] border-red-500' : ''}`}>
+                    <div className={`flex flex-row items-center gap-4 px-4 h-16 w-[340px] md:w-[400px] rounded-2xl focus-within:border-[2px] focus-within:border-themeBlue bg-themeInputBg ${loginErrors.password ? 'border-[2px] border-red-500' : ''}`}>
                         <i className="fa-solid fa-lock fa-lg text-themeTextGray"></i>
                         <input type={isPasswordVisible ? 'text' : 'password'} className="w-full h-full border-none outline-none bg-transparent text-themeBlack placeholder:text-themeTextGray" placeholder="Password" {...loginFormRegister('password')}/>
                         {!isPasswordVisible ? (<i className="fa-solid fa-eye fa-lg text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => setIsPasswordVisible(true)}></i>) : (<i className="fa-solid fa-eye-slash fa-lg text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => setIsPasswordVisible(false)}></i>)}
