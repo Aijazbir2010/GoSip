@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "@remix-run/react";
+import { json, redirect } from "@remix-run/node"
 import Footer from "components/Footer";
 import Spinner from "@components/Spinner";
 import axiosInstance from "~/axios";
+import { getUser } from "utils/getUser";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -24,10 +26,24 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+// Loader
+export const loader = async ({ request }: {request: Request}) => {
+  
+  const responseHeaders = new Headers()
+
+  const user = await getUser(request, responseHeaders)
+
+  if (user) {
+    return redirect('/chats', { headers: responseHeaders })
+  }
+
+  return json({})
+}
+
 const loginValidationSchema = Yup.object().shape({
     identifier: Yup.string()
       .test(
-        "is-email-or-GoSipID",
+        "is-Email-or-GoSipID",
         "Enter a valid E-mail or GoSip ID !",
         (value) => {
           if (!value) return false;
@@ -46,7 +62,7 @@ const loginValidationSchema = Yup.object().shape({
       .required('Password is required !')
 });
 
-const login = () => {
+const Login = () => {
 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isLoggingUserIn, setIsLoggingUserIn] = useState(false)
@@ -127,4 +143,4 @@ const login = () => {
   )
 }
 
-export default login
+export default Login
