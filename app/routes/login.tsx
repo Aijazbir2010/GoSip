@@ -31,7 +31,9 @@ export const loader = async ({ request }: {request: Request}) => {
   
   const responseHeaders = new Headers()
 
-  const user = await getUser(request, responseHeaders)
+  const response = await getUser(request, responseHeaders)
+
+  const { user } = response
 
   if (user) {
     return redirect('/chats', { headers: responseHeaders })
@@ -84,8 +86,6 @@ const Login = () => {
         identifier: data.identifier,
         password: data.password,
       })
-
-      console.log(response)
 
       setIsLoggingUserIn(false)
 

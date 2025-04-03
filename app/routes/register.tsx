@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "@remix-run/react";
+import { json, redirect } from "@remix-run/node"
 import Footer from "components/Footer";
 import Spinner from "@components/Spinner";
 import axiosInstance from "~/axios";
+import { getUser } from "utils/getUser";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -23,6 +25,21 @@ export const meta: MetaFunction = () => {
     }
   ];
 };
+
+// Loader
+export const loader = async ({ request }: { request: Request }) => {
+  const responseHeaders = new Headers()
+
+  const response = await getUser(request, responseHeaders)
+
+  const { user } = response
+
+  if (user) {
+    return redirect('/chats', { headers: responseHeaders })
+  }
+
+  return json({})
+}
 
 const registerValidationSchema = Yup.object().shape({
     name: Yup.string()
@@ -99,8 +116,6 @@ const register = () => {
         password: data.password,
         code: data.code,
       })
-
-      console.log(response)
 
       setIsRegisteringUser(false)
 
