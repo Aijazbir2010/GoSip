@@ -27,7 +27,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
   const response = await getUser(request, responseHeaders)
 
-  const { user } = response
+  const user = response?.user || null
 
   if (user) {
     return redirect('/chats', { headers: responseHeaders })

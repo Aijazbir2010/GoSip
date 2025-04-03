@@ -32,7 +32,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
   const response = await getUser(request, responseHeaders)
 
-  const { user } = response
+  const user = response?.user || null
 
   if (user) {
     return redirect('/chats', { headers: responseHeaders })
@@ -91,9 +91,7 @@ const register = () => {
 
       setIsSendingCode(true)
 
-      const response = await axiosInstance.post('/verificationcode/send', { email })
-      
-      console.log(response)
+      await axiosInstance.post('/verificationcode/send', { email, register: 'true' })
 
       setIsCodeSent(true)
       setIsSendingCode(false)
@@ -110,7 +108,7 @@ const register = () => {
     try {
       setIsRegisteringUser(true)
 
-      const response = await axiosInstance.post('/user/register', {
+      await axiosInstance.post('/user/register', {
         name: data.name,
         email: data.email,
         password: data.password,
@@ -133,7 +131,6 @@ const register = () => {
     if (isResendDisabled && timeLeft > 0) {
       timer = window.setInterval(() => {
         setTimeLeft((prev) => prev - 1)
-        console.log(timeLeft)
       }, 1000)
     } else if (timeLeft === 0) {
       setIsResendDisabled(false)
@@ -192,8 +189,8 @@ const register = () => {
                     {isCodeSent && <button className="h-16 w-[340px] md:w-[400px] flex justify-center items-center rounded-2xl border-none outline-none bg-themeBlue text-white font-bold hover:scale-95 transition-transform duration-300" type="submit">{isRegisteringUser || isSendingCode ? <Spinner /> : <span>Register</span>}</button>}
                 </form>
 
-                {isCodeSent && <button className="w-full flex justify-center mt-2" disabled={isResendDisabled}>
-                    <span className={`text-themeBlack text-lg ${isResendDisabled ? '' : 'cursor-pointer hover:text-themeBlue'} transition-colors duration-300`} onClick={() => sendCode()}>{isResendDisabled ? `Resend Code in ${formatTime(timeLeft)}` : 'Resend Code'}</span>
+                {isCodeSent && <button className="w-full flex justify-center mt-2" disabled={isResendDisabled} onClick={sendCode}>
+                    <span className={`text-themeBlack text-lg ${isResendDisabled ? '' : 'cursor-pointer hover:text-themeBlue'} transition-colors duration-300`}>{isResendDisabled ? `Resend Code in ${formatTime(timeLeft)}` : 'Resend Code'}</span>
                 </button>}
 
                 <div className="w-full flex justify-center mt-5">

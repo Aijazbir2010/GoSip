@@ -33,7 +33,7 @@ export const loader = async ({ request }: {request: Request}) => {
 
   const response = await getUser(request, responseHeaders)
 
-  const { user } = response
+  const user = response?.user || null
 
   if (user) {
     return redirect('/chats', { headers: responseHeaders })
@@ -72,11 +72,15 @@ const Login = () => {
   const {
       register: loginFormRegister,
       handleSubmit: handleLoginSubmit,
+      setError: loginSetError,
+      watch: loginWatch,
       formState: { errors: loginErrors },
     } = useForm({
       resolver: yupResolver(loginValidationSchema),
       mode: 'onChange',
   });
+
+  const identifier = loginWatch('identifier')
 
   const loginUser = async (data: {identifier: string, password: string}) => {
     try {
@@ -95,6 +99,16 @@ const Login = () => {
       setIsLoggingUserIn(false)
       console.log('Unable to log in user !', error)
     }
+  }
+
+  const handleForgotPasswordClick = () => {
+
+    if (!identifier) {
+      loginSetError('identifier', { type: 'manual', message: 'Please enter your E-mail or GoSipID before proceeding.' })
+      return
+    }
+
+    window.location.href = `/forgotpassword?identifier=${encodeURIComponent(identifier)}&isEmailSent=false`
   }
 
   return (
@@ -125,7 +139,7 @@ const Login = () => {
                     </div>
                     {loginErrors.password && <p className="text-red-500 text-xs px-4">{loginErrors.password.message}</p>}
 
-                    <a href="/forgotpassword" className="px-4 text-themeBlack hover:text-themeBlue transition-colors duration-300">Forgot password ?</a>
+                    <span className="px-4 text-themeBlack hover:text-themeBlue cursor-pointer transition-colors duration-300" onClick={handleForgotPasswordClick}>Forgot password ?</span>
 
                     <button className="h-16 w-[340px] md:w-[400px] flex justify-center items-center rounded-2xl border-none outline-none bg-themeBlue text-white font-bold hover:scale-95 transition-transform duration-300" type="submit">{isLoggingUserIn ? <Spinner /> : 'Log in'}</button>
                 </form>
