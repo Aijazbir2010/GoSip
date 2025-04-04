@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from "@remix-run/react"
 import Modal from 'react-modal'
 import SearchBar from "./SearchBar"
 
-const NaviagtionBar = () => {
+const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
 
   const location = useLocation()  
   const { chatId, groupchatId } = useParams()
@@ -167,7 +167,7 @@ const NaviagtionBar = () => {
                 <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/>
             </div>
             <Link to={'/profile'} className={`profile-icon`}>
-                <img src="/temporary/aijazbir-profile.jpg" alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
+                <img src={profilePic} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
             </Link>
         </div>
 
@@ -190,7 +190,7 @@ const NaviagtionBar = () => {
                     <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/>
                 </div>
                 <Link to={'/profile'} className={`profile-icon`}>
-                    <img src="/temporary/aijazbir-profile.jpg" alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
+                    <img src={profilePic} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
                 </Link>
             </div>
         </div>

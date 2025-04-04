@@ -1,9 +1,13 @@
+import { useState, useEffect } from "react";
 import NaviagtionBar from "@components/NaviagtionBar"
 import ChatsList from "@components/ChatsList";
 import GoSipLogoBox from "@components/GoSipLogoBox";
+import { getUser } from "utils/getUser";
 
-import { Outlet, useParams } from "@remix-run/react";
+import { Outlet, useParams, useLoaderData } from "@remix-run/react";
+import { json, redirect } from "@remix-run/node";
 
+import type { user } from "types/user";
 import type { MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = () => {
@@ -21,13 +25,37 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+// Loader
+export const loader = async ({ request }: { request: Request }) => {
+
+  const responseHeaders = new Headers()
+
+  const response = await getUser(request, responseHeaders)
+
+  const user = response?.user || null
+
+  if (!user) {
+    return redirect('/login')
+  }
+
+  return json({ user }, { headers: responseHeaders })
+}
+
 const Chats = () => {
 
   const { chatId } = useParams()
+  const loaderData = useLoaderData<{ user: user }>()
+  const [user, setUser] = useState<user | null>(null)
+
+  useEffect(() => {
+    if (!user) {
+      setUser(loaderData.user)
+    }
+  }, [loaderData])
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
-        <NaviagtionBar />
+        <NaviagtionBar profilePic={user?.profilePic || '/GoSipDefaultProfilePic.jpg'}/>
 
         <ChatsList />
 

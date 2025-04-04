@@ -2,7 +2,7 @@ import axiosInstance from "~/axios";
 
 type optionsType = {
     method?: string,
-    data?: {[key: string]: string},
+    data?: {[key: string]: string} | FormData,
     headers?: {[key: string]: string},
     isServer?: boolean,
     responseHeaders?: Headers | Response
@@ -69,6 +69,6 @@ export const fetchWithAuth = async (url: string, options: optionsType = {}) => {
             }
         }
 
-        console.log(`Error while fetching at ${url}.`)
+        console.log(`Error while fetching at ${url}.`, error)
     }
 }
