@@ -1,22 +1,18 @@
 import { useState, useEffect, useRef } from "react"
 import Picker from "@emoji-mart/react"
 import data from "@emoji-mart/data"
+import BigSpinner from "./BigSpinner"
 import Modal from 'react-modal'
 
-const ChatArea = () => {
+import type { userType } from "types/user"
+import type { chatAreaFriendType } from "types/chatAreaFriend"
+import type { messageType } from "types/message"
 
-  const messages = [
-    {sender: 'me', time: '16:00', isRead: true, message: 'Hlooo'},
-    {sender: 'me', time: '16:00', isRead: true, message: 'Till what time you are awake ??'},
-    {sender: 'jaskaran', time: '16:01', message: '1'},
-    {sender: 'me', time: '16:02', isRead: true, message: 'Ok'},
-    {sender: 'me', time: '16:02', isRead: true, message: 'Nice'},
-    {sender: 'jaskaran', time: '16:02', message: 'Hmm'},
-    {sender: 'me', time: '16:04', isRead: false, message: 'What is the progress of TeenTalks ?'},
-  ]  
+const ChatArea = ({ user, friend, messages }: { user: userType | null, friend: chatAreaFriendType | null, messages: messageType[] | null }) => {
 
   const [isClient, setIsClient] = useState(false)
   const [message, setMessage] = useState("")
+  const [isCopied, setIsCopied] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +38,12 @@ const ChatArea = () => {
     setMessage((prev) => prev + emoji.native)
   }
 
+  const handleCopy = (GoSipID: string) => {
+    navigator.clipboard.writeText(GoSipID).then(() => {
+      setIsCopied(true)
+      window.setTimeout(() => setIsCopied(false), 2000)
+    })
+  }
 
   const [isFriendProfileModalOpen, setIsFriendProfileModalOpen] = useState(false)
   const [isDeleteAllMessagesModalOpen, setIsDeleteAllMessagesModalOpen] = useState(false)
@@ -183,12 +185,17 @@ const ChatArea = () => {
 
   return (
     <div className="xl:w-[50%] w-full h-[calc(100vh-6.5rem)] xl:h-auto bg-themeBgGray rounded-2xl flex flex-col gap-5 items-center py-4">
-        <div className="header flex flex-row items-center justify-between px-3 md:px-5 w-full h-28">
+        {!user || !friend || !messages && <div className="w-full h-full flex justify-center items-center">
+          <BigSpinner />
+        </div>}
+        
+        {user && friend && messages && <div className="header flex flex-row items-center justify-between px-3 md:px-5 w-full h-28">
             <div className="flex flex-row items-center gap-3 md:gap-5">
-                <div className="profile-pic rounded-full">
-                    <img src="/temporary/jaskaran-profile.jpg" alt="Profile Pic" className="w-20 h-20 md:w-24 md:h-24 rounded-full"/>
+                <div className="profile-pic rounded-full relative">
+                    <img src={friend.profilePic} alt="Profile Pic" className="w-20 h-20 md:w-24 md:h-24 rounded-full"/>
+                    {friend.isOnline && <div className="w-3 h-3 absolute z-10 bg-themeGreen rounded-full right-3 bottom-1 md:bottom-2"/>}
                 </div>
-                <span className="text-themeBlack text-2xl md:text-3xl">Jaskaran</span>
+                <span className="text-themeBlack text-2xl md:text-3xl">{friend.name}</span>
             </div>
 
             <div className="icons flex flex-row items-center gap-5 md:gap-10">
@@ -199,23 +206,23 @@ const ChatArea = () => {
                     <i className={`fa-solid fa-trash fa-2xl ${isDeleteAllMessagesModalOpen ? 'text-themeRed' : 'text-themeBlack'} hover:text-themeRed transition-colors duration-300 cursor-pointer`}></i>
                 </div>
             </div>
-        </div>
+        </div>}
 
-        <div className="main-chat-area w-full h-full max-h-full overflow-y-auto no-scrollbar flex flex-col gap-4 px-3 md:px-5">
-            {messages.map((message, index) => (<div key={index} className={`message-container w-full flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`message flex flex-col gap-1 w-full ${message.sender === 'me' ? 'items-end' : 'items-start'}`}>
+        {user && friend && messages && <div className="main-chat-area w-full h-full max-h-full overflow-y-auto no-scrollbar flex flex-col gap-4 px-3 md:px-5">
+            {messages.map((message, index) => (<div key={index} className={`message-container w-full flex ${message.senderGoSipID === user.GoSipID ? 'justify-end' : 'justify-start'}`}>
+                <div className={`message flex flex-col gap-1 w-full ${message.senderGoSipID === user.GoSipID ? 'items-end' : 'items-start'}`}>
                     <div className="flex flex-row gap-2 items-center">
-                        <span className="text-themeTextGray text-xs">{message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}, {message.time}</span>
-                        {(message.isRead === true || message.isRead === false) && <div className={`w-2 h-2 rounded-full ${message.isRead ? 'bg-themeBlue' : 'bg-themeTextGray'}`}/>}
+                        <span className="text-themeTextGray text-xs">{message.senderGoSipID === user.GoSipID ? 'Me' : friend.name}</span>
+                        {message.senderGoSipID === user.GoSipID && <div className={`w-2 h-2 rounded-full ${message.readBy.includes(friend.GoSipID) ? 'bg-themeBlue' : 'bg-themeTextGray'}`}/>}
                     </div>
-                    <div className={`${message.sender === 'me' ? 'bg-themeBlue text-white' : 'bg-themeInputBg text-themeBlack'} px-4 py-4 w-fit max-w-[80%] rounded-xl text-xl xl:text-2xl`}>
-                        {message.message}
+                    <div className={`${message.senderGoSipID === user.GoSipID ? 'bg-themeBlue text-white' : 'bg-themeInputBg text-themeBlack'} px-4 py-4 w-fit max-w-[80%] rounded-xl text-xl xl:text-2xl`}>
+                        {message.text}
                     </div>
                 </div>
             </div>))}
-        </div>
+        </div>}
 
-        <div className="message-input-area w-full flex flex-row gap-2 xl:gap-5 px-3 md:px-5 relative">
+        {user && friend && messages && <div className="message-input-area w-full flex flex-row gap-2 xl:gap-5 px-3 md:px-5 relative">
             <div className="emoji-box bg-themeBlack w-16 h-16 rounded-2xl flex justify-center items-center hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onMouseDown={() => setShowEmojiPicker((prev) => !prev)}>
                 <i className="fa-solid fa-face-laugh fa-xl text-white"></i>
             </div>
@@ -230,21 +237,21 @@ const ChatArea = () => {
             {isClient && showEmojiPicker && (<div ref={emojiPickerRef} className="absolute z-10 bottom-0 translate-y-[-20%]">
                 <Picker data={data} onEmojiSelect={handleEmojiSelect} />
             </div>)}    
-        </div>
+        </div>}
 
         <Modal isOpen={isFriendProfileModalOpen} onRequestClose={closeFriendProfileModal} contentLabel="Friend Profile Modal" style={friendProfileModalCustomStyles}>
             <div className="flex h-full w-full justify-center items-center">
                 <div className="w-full flex flex-col items-center gap-5">
                     <div className="profile-pic rounded-full">
-                        <img src="/temporary/jaskaran-profile.jpg" alt="Profile Pic" className="w-28 h-28 md:h-32 md:w-32 rounded-full"/>
+                        <img src={friend?.profilePic} alt="Profile Pic" className="w-28 h-28 md:h-32 md:w-32 rounded-full"/>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <span className="text-center text-themeBlack text-4xl">Jaskaran</span>
+                        <span className="text-center text-themeBlack text-4xl">{friend?.name}</span>
 
                         <div className="flex flex-row items-center gap-3">
-                            <span className="text-2xl text-themeBlue">GS-E050FF</span>
-                            <i className="fa-regular fa-clone fa-xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer"></i>
+                            <span className="text-2xl text-themeBlue">{friend?.GoSipID}</span>
+                            {isCopied ? <i className="fa-solid fa-check fa-xl text-themeBlue"></i> : <i className="fa-regular fa-clone fa-xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => handleCopy(friend?.GoSipID || '')}></i>}
                         </div>
                     </div>
 

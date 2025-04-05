@@ -3,11 +3,13 @@ import NaviagtionBar from "@components/NaviagtionBar"
 import ChatsList from "@components/ChatsList";
 import GoSipLogoBox from "@components/GoSipLogoBox";
 import { getUser } from "utils/getUser";
+import { getChatRooms } from "utils/getChatRooms";
 
 import { Outlet, useParams, useLoaderData } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
 
-import type { user } from "types/user";
+import type { userType } from "types/user";
+import type { chatRoomType } from "types/chatRoom";
 import type { MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = () => {
@@ -38,18 +40,25 @@ export const loader = async ({ request }: { request: Request }) => {
     return redirect('/login')
   }
 
-  return json({ user }, { headers: responseHeaders })
+  const chatRooms = await getChatRooms(request)
+
+  return json({ user, chatRooms }, { headers: responseHeaders })
 }
 
 const Chats = () => {
 
   const { chatId } = useParams()
-  const loaderData = useLoaderData<{ user: user }>()
-  const [user, setUser] = useState<user | null>(null)
+  const loaderData = useLoaderData<{ user: userType, chatRooms: chatRoomType[] }>()
+  const [user, setUser] = useState<userType | null>(null)
+  const [chatRooms, setChatRooms] = useState<chatRoomType[] | null>(null)
 
   useEffect(() => {
     if (!user) {
       setUser(loaderData.user)
+    }
+
+    if (!chatRooms) {
+      setChatRooms(loaderData.chatRooms)
     }
   }, [loaderData])
 
@@ -57,7 +66,7 @@ const Chats = () => {
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
         <NaviagtionBar profilePic={user?.profilePic || '/GoSipDefaultProfilePic.jpg'}/>
 
-        <ChatsList />
+        <ChatsList chatRooms={chatRooms}/>
 
         {chatId ? <Outlet /> : <GoSipLogoBox />}
     </div>

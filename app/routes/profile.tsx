@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 
-import type { user } from "types/user";
+import type { userType } from "types/user";
 import type { MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = () => {
@@ -64,10 +64,10 @@ const Profile = () => {
         mode: 'onChange',
   });
 
-  const loaderData = useLoaderData<{ user: user }>()
+  const loaderData = useLoaderData<{ user: userType }>()
   const GoSipIDInputRef = useRef<HTMLInputElement>(null)
   const [isCopied, setIsCopied] = useState(false)
-  const [user, setUser] = useState<user | null>(null)
+  const [user, setUser] = useState<userType | null>(null)
   const [isLoggingOutUser, setIsLoggingOutUser] = useState(false)
   const [isChangingName, setIsChangingName] = useState(false)
   const [isProfilePicUploading, setIsProfilePicUploading] = useState(false)

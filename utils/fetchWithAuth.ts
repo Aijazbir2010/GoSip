@@ -69,6 +69,11 @@ export const fetchWithAuth = async (url: string, options: optionsType = {}) => {
             }
         }
 
+        // To redirect users to /chats
+        if (error.config.url === '/chats/messages' && error.response && error.response.status === 404) {
+            return null
+        }
+
         console.log(`Error while fetching at ${url}.`, error)
     }
 }

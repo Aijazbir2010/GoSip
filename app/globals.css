@@ -23,6 +23,15 @@
     animation: spin 1s linear infinite;
 }
 
+.big-spinner {
+    height: 80px;
+    width: 80px;
+    border-radius: 100%;
+    border: 10px solid transparent;
+    border-top: 10px solid #4BB3FD;
+    animation: spin 1s linear infinite;
+}
+
 @keyframes spin {
     0% {
         rotate: 0deg;
