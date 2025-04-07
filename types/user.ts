@@ -6,5 +6,6 @@ export type userType = {
   profilePic: string,
   GoSipID: string,
   color: string,
+  friends: string[],
   __v: number,
 }

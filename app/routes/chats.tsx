@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import socket from "~/socket";
 import NaviagtionBar from "@components/NaviagtionBar"
 import ChatsList from "@components/ChatsList";
 import GoSipLogoBox from "@components/GoSipLogoBox";
@@ -62,11 +63,31 @@ const Chats = () => {
     }
   }, [loaderData])
 
+  useEffect(() => {
+    if (user) {
+      socket.emit('join', user.GoSipID)
+    }
+  }, [user])
+
+  useEffect(() => {
+    socket.on('unreadCountUpdate', ({ chatRoomID, unreadCount }) => {
+      setChatRooms((prev) => {
+        if (!prev) return prev
+
+        return prev.map((chatRoom) => chatRoom.chatRoomID === chatRoomID ? {...chatRoom, unreadCount} : chatRoom)
+      })
+    })
+
+    return () => {
+      socket.off('unreadCountUpdate')
+    }
+  }, [])
+
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
         <NaviagtionBar profilePic={user?.profilePic || '/GoSipDefaultProfilePic.jpg'}/>
 
-        <ChatsList chatRooms={chatRooms}/>
+        <ChatsList chatRooms={chatRooms} user={user}/>
 
         {chatId ? <Outlet /> : <GoSipLogoBox />}
     </div>

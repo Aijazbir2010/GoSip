@@ -27,7 +27,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     return redirect('/chats')
   }
 
-  return json({ user, data })
+  return json({ user, data, chatRoomID })
 }
 
 const ChatAreaLayout = () => {
@@ -37,12 +37,14 @@ const ChatAreaLayout = () => {
     data: {
       friend: chatAreaFriendType,
       messages: messageType[],
-    }
+    },
+    chatRoomID: string,
   }>()
 
   const [user, setUser] = useState<userType | null>(null)
   const [friend, setFriend] = useState<chatAreaFriendType | null>(null)
   const [messages, setMessages] = useState<messageType[] | null>(null)
+  const [chatRoomID, setChatRoomID] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -56,10 +58,14 @@ const ChatAreaLayout = () => {
     if (!messages) {
       setMessages(loaderData.data.messages)
     }
+
+    if (!chatRoomID) {
+      setChatRoomID(loaderData.chatRoomID)
+    }
   }, [loaderData])
 
   return (
-    <ChatArea user={user} friend={friend} messages={messages}/>
+    <ChatArea user={user} friend={friend} messagesProp={messages} chatRoomID={chatRoomID}/>
   )
 }
 

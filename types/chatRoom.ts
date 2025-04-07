@@ -4,6 +4,7 @@ export type chatRoomType = {
         name: string,
         profilePic: string,
         isOnline: boolean,
+        GoSipID: string,
     },
     unreadCount: number,
 }

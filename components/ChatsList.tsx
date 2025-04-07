@@ -1,11 +1,37 @@
+import { useState, useEffect } from "react"
+import socket from "~/socket"
 import { Link, useParams } from "@remix-run/react"
 import SearchBar from "./SearchBar"
 import BigSpinner from "./BigSpinner"
+
 import type { chatRoomType } from "types/chatRoom"
+import type { userType } from "types/user"
 
-const ChatsList = ({ chatRooms }: { chatRooms: chatRoomType[] | null }) => {
+const ChatsList = ({ chatRooms, user }: { chatRooms: chatRoomType[] | null, user: userType | null }) => {
 
-  const { chatId } = useParams()  
+  const { chatId } = useParams()
+  const [onlineFriends, setOnlineFriends] = useState<string[]>([])
+
+  useEffect(() => {
+    socket.on('userOnline', (GoSipID: string) => {
+        setOnlineFriends((prev) => [...prev, GoSipID])
+    })
+  
+    socket.on('userOffline', (GoSipID: string) => {
+        setOnlineFriends((prev) => prev.filter((id: string) => id !== GoSipID))
+    })
+  
+    socket.on('onlineFriendsList', (onlineFriendsList: string[]) => {
+        setOnlineFriends(onlineFriendsList)
+    })
+  
+    return () => {
+        socket.off('userOnline')
+        socket.off('userOffline')
+        socket.off('onlineFriendsList')
+    }
+
+  }, [])
 
   return (
     <div className={`xl:w-[50%] w-full h-[calc(100vh-6.5rem)] xl:h-auto bg-themeBgGray rounded-2xl ${chatId ? 'xl:flex hidden' : 'flex'} flex-col gap-10 items-center py-4`}>
@@ -24,7 +50,7 @@ const ChatsList = ({ chatRooms }: { chatRooms: chatRoomType[] | null }) => {
                             <div className="flex flex-col h-24 justify-center gap-3">
                                 <div className="flex flex-row items-center gap-2">
                                     <span className="text-themeBlack text-2xl group-hover:text-white transition-colors duration-300">{room.friend.name}</span>
-                                    {room.friend.isOnline && <div className="w-3 h-3 rounded-full bg-[#35FF69]"/>}
+                                    {onlineFriends.includes(room.friend.GoSipID) && <div className="w-3 h-3 rounded-full bg-[#35FF69]"/>}
                                 </div>
 
                                 {room.unreadCount > 0 && <div className="flex flex-row items-center gap-2">
