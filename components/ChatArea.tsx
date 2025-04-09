@@ -53,39 +53,36 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
   }, [messagesProp])
 
   useEffect(() => {
-    if (user && chatRoomID) {
+    if (user && friend && chatRoomID) {
 
-      socket.emit('join', user.GoSipID)
+      socket.emit('join')
 
-      socket.on('receiveMessage', (data) => {
+      const receiveMessageHandler = (data: { from: string, message: string, chatRoomID: string, createdAt: Date }) => {
         if (data.chatRoomID === chatRoomID) {
 
           const isNearBottom = isNearBottomRef.current
 
           setMessages((prev) => {
-            console.log('Setting Received Message. Is Near Bottom: ', isNearBottom)
             if (!prev) {
               if (!isNearBottom) {
-                console.log('Condition Ran 1')
                 setUnreadCount((prev) => prev + 1)
               }
               return [{ chatRoomID, senderGoSipID: data.from, text: data.message, readBy: [data.from, user.GoSipID], createdAt: data.createdAt }]
             }
 
             if (!isNearBottom) {
-              console.log('Condition Ran 2')
               setUnreadCount((prev) => prev + 1)
             }
             return [...prev, { chatRoomID, senderGoSipID: data.from, text: data.message, readBy: [data.from, user.GoSipID], createdAt: data.createdAt }]
           })
 
           if (isNearBottom) {
-            socket.emit('markAsRead', { chatRoomID, reader: user.GoSipID })
+            socket.emit('markAsRead', { chatRoomID, GoSipID: friend.GoSipID })
           }
         }
-      })
+      }
 
-      socket.on('messagesRead', ({ chatRoomID: id, reader }) => {
+      const messagesReadHandler = ({ chatRoomID: id, reader }: { chatRoomID: string, reader: string }) => {
         if (id === chatRoomID) {
           setMessages((prev) => {
             if (!prev) return prev;
@@ -100,57 +97,73 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
           })
         }
-      })
+      }
+
+      socket.on('receiveMessage', receiveMessageHandler)
+
+      socket.on('messagesRead', messagesReadHandler)
 
       return () => {
-        socket.off('receiveMessage')
-        socket.off('messagesRead')
+        socket.off('receiveMessage', receiveMessageHandler)
+        socket.off('messagesRead', messagesReadHandler)
       }
     }
-  }, [user, chatRoomID])
+  }, [user, friend, chatRoomID])
 
   useEffect(() => {
-    if (isNearBottom && user && chatRoomID) {
-      socket.emit('markAsRead', { chatRoomID, reader: user.GoSipID })
+    if (isNearBottom && user && friend && chatRoomID) {
+      socket.emit('markAsRead', { chatRoomID, GoSipID: friend.GoSipID })
     }
-  }, [user, chatRoomID, isNearBottom])
+  }, [user, friend, chatRoomID, isNearBottom])
 
   useEffect(() => {
-    socket.on('userOnline', (GoSipID: string) => {
+
+    const userOnlineHandler = (GoSipID: string) => {
       setOnlineFriends((prev) => [...prev, GoSipID])
-    })
+    }
 
-    socket.on('userOffline', (GoSipID: string) => {
+    const userOfflineHandler = (GoSipID: string) => {
       setOnlineFriends((prev) => prev.filter((id: string) => id !== GoSipID))
-    })
+    }
 
-    socket.on('onlineFriendsList', (onlineFriendsList: string[]) => {
+    const onlineFriendsListHandler = (onlineFriendsList: string[]) => {
       setOnlineFriends(onlineFriendsList)
-    })
+    }
+
+    socket.on('userOnline', userOnlineHandler)
+
+    socket.on('userOffline', userOfflineHandler)
+
+    socket.on('onlineFriendsList', onlineFriendsListHandler)
 
     return () => {
-      socket.off('userOnline')
-      socket.off('userOffline')
-      socket.off('onlineFriendsList')
+      socket.off('userOnline', userOnlineHandler)
+      socket.off('userOffline', userOfflineHandler)
+      socket.off('onlineFriendsList', onlineFriendsListHandler)
     }
   }, [])
 
   useEffect(() => {
-    socket.on('typing', ({ chatRoomID: incomingRoomID }) => {
+
+    const typingHandler = ({ chatRoomID: incomingRoomID }: { chatRoomID: string }) => {
       if (incomingRoomID === chatRoomID) {
         setIsFriendTyping(true)
       }
-    })
+    }
 
-    socket.on('stopTyping', ({ chatRoomID: incomingRoomID }) => {
+    const stopTypingHandler = ({ chatRoomID: incomingRoomID }: { chatRoomID: string }) => {
       if (incomingRoomID === chatRoomID) {
         setIsFriendTyping(false)
       }
-    })
+    }
+
+    socket.on('typing', typingHandler)
+
+    socket.on('stopTyping', stopTypingHandler)
 
     return () => {
-      socket.off('typing')
-      socket.off('stopTyping')
+      socket.off('typing', typingHandler)
+      socket.off('stopTyping', stopTypingHandler)
     }
 
   }, [chatRoomID])
@@ -175,7 +188,6 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
   
       socket.emit('sendMessage', {
         to: friend?.GoSipID,
-        from: user?.GoSipID,
         message: newMessage,
         chatRoomID,
       })

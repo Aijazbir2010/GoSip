@@ -5,6 +5,7 @@ import ChatsList from "@components/ChatsList";
 import GoSipLogoBox from "@components/GoSipLogoBox";
 import { getUser } from "utils/getUser";
 import { getChatRooms } from "utils/getChatRooms";
+import { getFriendRequests } from "utils/getFriendRequests";
 
 import { Outlet, useParams, useLoaderData } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
@@ -43,13 +44,15 @@ export const loader = async ({ request }: { request: Request }) => {
 
   const chatRooms = await getChatRooms(request)
 
-  return json({ user, chatRooms }, { headers: responseHeaders })
+  const friendRequests = await getFriendRequests(request)
+
+  return json({ user, chatRooms, friendRequests: friendRequests.users }, { headers: responseHeaders })
 }
 
 const Chats = () => {
 
   const { chatId } = useParams()
-  const loaderData = useLoaderData<{ user: userType, chatRooms: chatRoomType[] }>()
+  const loaderData = useLoaderData<{ user: userType, chatRooms: chatRoomType[], friendRequests: { name: string, GoSipID: string, profilePic: string }[] }>()
   const [user, setUser] = useState<userType | null>(null)
   const [chatRooms, setChatRooms] = useState<chatRoomType[] | null>(null)
 
@@ -64,30 +67,39 @@ const Chats = () => {
   }, [loaderData])
 
   useEffect(() => {
-    if (user) {
-      socket.emit('join', user.GoSipID)
-    }
-  }, [user])
+    socket.emit('join')
 
-  useEffect(() => {
-    socket.on('unreadCountUpdate', ({ chatRoomID, unreadCount }) => {
+    const unreadCountUpdateHandler = ({ chatRoomID, unreadCount }: { chatRoomID: string, unreadCount: number }) => {
       setChatRooms((prev) => {
         if (!prev) return prev
 
         return prev.map((chatRoom) => chatRoom.chatRoomID === chatRoomID ? {...chatRoom, unreadCount} : chatRoom)
       })
-    })
+    }
+
+    const acceptedRequestHandler = (data: { chatRoomID: string, friend: { name: string, GoSipID: string, profilePic: string }, unreadCount: number }) => {
+      setChatRooms((prev) => {
+        if (!prev) return prev
+
+        return [...prev, data]
+      })
+    }
+
+    socket.on('unreadCountUpdate', unreadCountUpdateHandler)
+
+    socket.on('acceptedRequest', acceptedRequestHandler)
 
     return () => {
-      socket.off('unreadCountUpdate')
+      socket.off('unreadCountUpdate', unreadCountUpdateHandler)
+      socket.off('acceptedRequest', acceptedRequestHandler)
     }
   }, [])
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
-        <NaviagtionBar profilePic={user?.profilePic || '/GoSipDefaultProfilePic.jpg'}/>
+        <NaviagtionBar userProp={user} friendRequestsProp={loaderData.friendRequests}/>
 
-        <ChatsList chatRooms={chatRooms} user={user}/>
+        <ChatsList chatRooms={chatRooms}/>
 
         {chatId ? <Outlet /> : <GoSipLogoBox />}
     </div>

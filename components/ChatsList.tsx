@@ -5,30 +5,36 @@ import SearchBar from "./SearchBar"
 import BigSpinner from "./BigSpinner"
 
 import type { chatRoomType } from "types/chatRoom"
-import type { userType } from "types/user"
 
-const ChatsList = ({ chatRooms, user }: { chatRooms: chatRoomType[] | null, user: userType | null }) => {
+const ChatsList = ({ chatRooms }: { chatRooms: chatRoomType[] | null }) => {
 
   const { chatId } = useParams()
   const [onlineFriends, setOnlineFriends] = useState<string[]>([])
 
   useEffect(() => {
-    socket.on('userOnline', (GoSipID: string) => {
+
+    const userOnlineHandler = (GoSipID: string) => {
         setOnlineFriends((prev) => [...prev, GoSipID])
-    })
-  
-    socket.on('userOffline', (GoSipID: string) => {
+    }
+
+    const userOfflineHandler = (GoSipID: string) => {
         setOnlineFriends((prev) => prev.filter((id: string) => id !== GoSipID))
-    })
-  
-    socket.on('onlineFriendsList', (onlineFriendsList: string[]) => {
+    }
+
+    const onlineFriendsListHandler = (onlineFriendsList: string[]) => {
         setOnlineFriends(onlineFriendsList)
-    })
+    }
+
+    socket.on('userOnline', userOnlineHandler)
+  
+    socket.on('userOffline', userOfflineHandler)
+  
+    socket.on('onlineFriendsList', onlineFriendsListHandler)
   
     return () => {
-        socket.off('userOnline')
-        socket.off('userOffline')
-        socket.off('onlineFriendsList')
+        socket.off('userOnline', userOnlineHandler)
+        socket.off('userOffline', userOfflineHandler)
+        socket.off('onlineFriendsList', onlineFriendsListHandler)
     }
 
   }, [])
@@ -41,7 +47,7 @@ const ChatsList = ({ chatRooms, user }: { chatRooms: chatRoomType[] | null, user
 
         <SearchBar placeholder="Search by Name or GoSip ID"/>
 
-        {chatRooms ? (<ul className="w-[95%] md:w-[90%] max-h-full space-y-5 overflow-y-auto no-scrollbar">
+        {chatRooms && chatRooms.length > 0 && (<ul className="w-[95%] md:w-[90%] max-h-full space-y-5 overflow-y-auto no-scrollbar">
             {chatRooms.map((room) => (<li key={room.chatRoomID}>
                         <Link to={`/chats/${room.chatRoomID}`} className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg hover:bg-themeBlue transition-colors duration-300 flex flex-row items-center px-3 md:px-5 gap-5 group">
                             <div className="profile-pic rounded-full">
@@ -60,11 +66,15 @@ const ChatsList = ({ chatRooms, user }: { chatRooms: chatRoomType[] | null, user
                             </div>
                         </Link>
             </li>))}
-        </ul>) : (
-            <div className="w-full h-full flex justify-center items-center">
-                <BigSpinner />
-            </div>
-        )}
+        </ul>)}
+
+        {chatRooms && chatRooms.length === 0 && <div className="w-full h-full flex justify-center items-center">
+            <span className="text-3xl md:text-4xl text-themeBlue font-black text-center">No Friends !</span>
+        </div>}
+
+        {!chatRooms && <div className="w-full h-full flex justify-center items-center">
+            <BigSpinner />
+        </div>}
         
     </div>
   )

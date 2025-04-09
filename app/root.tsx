@@ -8,6 +8,8 @@ import {
   useRouteError,
   Link
 } from "@remix-run/react";
+import { useEffect } from "react";
+import Modal from "react-modal";
 import type { LinksFunction } from "@remix-run/node";
 
 import "./tailwind.css";
@@ -45,7 +47,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="bg-white no-scrollbar">
-        {children}
+        <div id="app">
+          {children}
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -54,6 +58,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+
+  useEffect(() => {
+    Modal.setAppElement('#app')
+  }, [])
+
   return <Outlet />;
 }
 

@@ -1,12 +1,125 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Link, useLocation, useParams } from "@remix-run/react"
 import Modal from 'react-modal'
 import SearchBar from "./SearchBar"
+import BigSpinner from "./BigSpinner"
+import Spinner from "./Spinner"
+import { fetchWithAuth } from "utils/fetchWithAuth"
+import socket from "~/socket"
 
-const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
+import type { userType } from "types/user"
+
+const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | null, friendRequestsProp: { name: string, GoSipID: string, profilePic: string }[] }) => {
 
   const location = useLocation()  
   const { chatId, groupchatId } = useParams()
+
+  const [users, setUsers] = useState<{ name: string, GoSipID: string, profilePic: string, inFriendRequests: boolean }[]>([])
+  const [friendRequests, setFriendRequests] = useState<{ name: string, GoSipID: string, profilePic: string }[] | null>(null)
+  const [query, setQuery] = useState("")
+  const searchTimeoutRef = useRef<number | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [sendingRequestsTo, setSendingRequestsTo] = useState<string[]>([])
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
+  const [acceptingRequestsOfUsers, setAcceptingRequestsOfUsers] = useState<string[]>([])
+  const [rejectingRequestsOfUsers, setRejectingRequestsOfUsers] = useState<string[]>([])
+
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      socket.emit('join')
+    }
+
+    const friendRequestReceivedHandler = ({ name, GoSipID, profilePic }: { name: string, GoSipID: string, profilePic: string }) => {
+      setUnreadNotificationsCount((prev) => prev + 1)
+
+      setFriendRequests((prev) => {
+        if (!prev) return prev
+        
+        return [...prev, { name, GoSipID, profilePic }]
+      })
+    }
+
+    socket.on('friendRequestReceived', friendRequestReceivedHandler)
+
+    return () => {
+      socket.off('friendRequestReceived', friendRequestReceivedHandler)
+    }
+
+  }, [])
+
+  useEffect(() => {
+    if (!friendRequests) {
+      setFriendRequests(friendRequestsProp)
+    }
+  }, [friendRequestsProp])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+    const query = e.target.value
+
+    if (!query) {
+      setUsers([])
+      return
+    }
+
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = window.setTimeout(async () => {
+      setIsSearching(true)
+
+      const response = await fetchWithAuth(`/user/getusers?identifier=${query}`, { method: 'GET', isServer: false })
+
+      setIsSearching(false)
+
+      setUsers(response.users)
+    }, 300)
+  }
+
+  const sendFriendRequest = async (GoSipID: string) => {
+    setSendingRequestsTo((prev) => [...prev, GoSipID])
+
+    socket.emit('sendFriendRequest', { GoSipID })
+
+    setUsers((prev) => prev.map((user) => {
+      if (user.GoSipID === GoSipID) {
+        return {...user, inFriendRequests: true}
+      }
+
+      return user
+    }))
+
+    setSendingRequestsTo((prev) => prev.filter(id => id !== GoSipID))
+  }
+
+  const acceptRequest = async (GoSipID: string) => {
+    setAcceptingRequestsOfUsers((prev) => [...prev, GoSipID])
+
+    socket.emit('acceptRequest', GoSipID)
+
+    setFriendRequests((prev) => {
+      if (!prev) return prev
+
+      return prev.filter((user) => user.GoSipID !== GoSipID)
+    })
+
+    setAcceptingRequestsOfUsers((prev) => prev.filter(id => id !== GoSipID))
+  }
+
+  const rejectRequest = async (GoSipID: string) => {
+    setRejectingRequestsOfUsers((prev) => [...prev, GoSipID])
+
+    const response = await fetchWithAuth('/user/rejectrequest', { method: 'POST', data: { GoSipID }, isServer: false })
+
+    setFriendRequests((prev) => {
+      if (!prev) return prev
+
+      return prev.filter((user) => user.GoSipID !== GoSipID)
+    })
+
+    setRejectingRequestsOfUsers((prev) => prev.filter(id => id !== GoSipID))
+  }
 
   const [isAddFriendsModalOpen, setIsAddFriendsModalOpen] = useState(false)
   const [isInboxModalOpen, setIsInboxModalOpen] = useState(false)
@@ -17,10 +130,12 @@ const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
 
   const closeAddFriendsModal = () => {
     setIsAddFriendsModalOpen(false)
+    setQuery("")
   }
 
   const openInboxModal = () => {
     setIsInboxModalOpen(true)
+    setUnreadNotificationsCount(0)
   }
 
   const closeInboxModal = () => {
@@ -164,10 +279,10 @@ const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
             </div>
             <div className="inbox-icon relative" onClick={openInboxModal}>
                 <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
-                <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/>
+                {/* <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/> */}
             </div>
             <Link to={'/profile'} className={`profile-icon`}>
-                <img src={profilePic} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
+                <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
             </Link>
         </div>
 
@@ -187,10 +302,10 @@ const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
                 </div>
                 <div className="inbox-icon relative" onClick={openInboxModal}>
                     <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
-                    <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/>
+                    {unreadNotificationsCount > 0 && <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]`}/>}
                 </div>
                 <Link to={'/profile'} className={`profile-icon`}>
-                    <img src={profilePic} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
+                    <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
                 </Link>
             </div>
         </div>
@@ -201,63 +316,47 @@ const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
             </div>
 
             <div className="w-full flex justify-center mt-5">
-                <SearchBar placeholder="Search User by Name or GoSip ID"/>
+                <SearchBar placeholder="Search User by Name or GoSip ID" value={query} handleChange={handleSearch}/>
             </div>
 
-            <div className="w-full flex justify-center mt-5">
+            {!isSearching && query && users.length > 0 && <div className="w-full flex justify-center mt-5">
                 <ul className="w-[95%] md:w-[90%] max-h-[250px] space-y-5 overflow-y-auto no-scrollbar">
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
+                    {users.map((user, index) => (<li key={index} className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
                         <div className="flex flex-row gap-3 md:gap-5 items-center">
                             <div className="profile-pic rounded-full">
-                                <img src="/temporary/vansh-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
+                                <img src={user.profilePic} alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
                             </div>
                             <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Vansh</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-PB5911</span>
+                                <span className="text-themeBlack text-lg md:text-2xl">{user.name}</span> 
+                                <span className="text-sm md:text-xl text-themeBlue">{user.GoSipID}</span>
                             </div>
                         </div>
 
-                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer">
+                        {!userProp?.friends.includes(user.GoSipID) && !user.inFriendRequests && !sendingRequestsTo.includes(user.GoSipID) && <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => sendFriendRequest(user.GoSipID)}>
                             <i className="fa-solid fa-user-plus fa-xl text-white hidden md:block"></i>
                             <i className="fa-solid fa-user-plus text-white block md:hidden"></i>
-                        </div>
-                    </li>
+                        </div>}
 
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
-                        <div className="flex flex-row gap-3 md:gap-5 items-center">
-                            <div className="profile-pic rounded-full">
-                                <img src="/temporary/manav-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
-                            </div>
-                            <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Manav</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-PB4041</span>
-                            </div>
-                        </div>
-
-                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlue hover:bg-themeBlue transition-colors duration-300 cursor-pointer">
-                            <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
-                            <i className="fa-solid fa-check fa-lg text-white block md:hidden"></i>
-                        </div>
-                    </li>
-
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
-                        <div className="flex flex-row gap-3 md:gap-5 items-center">
-                            <div className="profile-pic rounded-full">
-                                <img src="/temporary/jaskaran-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
-                            </div>
-                            <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Jaskaran</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-E050FF</span>
-                            </div>
-                        </div>
-
-                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer">
-                            <i className="fa-solid fa-user-plus fa-xl text-white hidden md:block"></i>
-                            <i className="fa-solid fa-user-plus text-white block md:hidden"></i>
-                        </div>
-                    </li>
+                        {(userProp?.friends.includes(user.GoSipID) || user.inFriendRequests) && <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center ${sendingRequestsTo.includes(user.GoSipID) ? 'bg-themeBlack' : 'bg-themeBlue'}`}>
+                            {!sendingRequestsTo.includes(user.GoSipID) && <i className={`fa-solid ${userProp?.friends.includes(user.GoSipID) ? 'fa-user-group' : 'fa-check'} fa-xl text-white hidden md:block`}></i>}
+                            {!sendingRequestsTo.includes(user.GoSipID) && <i className={`fa-solid ${userProp?.friends.includes(user.GoSipID) ? 'fa-user-group' : 'fa-check'} text-white block md:hidden`}></i>}
+                            {sendingRequestsTo.includes(user.GoSipID) && <Spinner />}
+                        </div>}
+                    </li>))}
                 </ul>
-            </div>
+            </div>}
+
+            {!isSearching && users.length === 0 && query && <div className="w-full h-[260px] flex justify-center items-center">
+              <span className="text-3xl text-themeBlue font-black">No Users Found !</span>
+            </div>}
+
+            {!isSearching && !query && <div className="w-full h-[260px] flex justify-center items-center">
+              <span className="text-3xl text-themeBlue text-center font-black max-w-[90%]">Search Users To Add Them !</span>
+            </div>}
+
+            {isSearching && <div className="w-full h-[260px] flex justify-center items-center">
+              <BigSpinner />
+            </div>}
 
             <div className="absolute top-7 right-7 md:right-10">
                 <i className="fa-solid fa-xmark fa-2xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={closeAddFriendsModal}></i>
@@ -269,78 +368,66 @@ const NaviagtionBar = ({ profilePic }: { profilePic: string }) => {
                 <span className="text-4xl md:text-5xl font-black text-themeBlue">Inbox</span>
             </div>
 
-            <div className="w-full flex justify-center mt-5 md:mt-10">
+            {friendRequests && friendRequests.length > 1 && <div className="w-full flex justify-center mt-5 md:mt-10">
                 <ul className="w-[95%] md:w-[90%] max-h-[250px] space-y-5 overflow-y-auto no-scrollbar">
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
+                    {friendRequests.map((user, index) => (<li key={index} className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-2 md:px-5">
                         <div className="flex flex-row gap-3 md:gap-5 items-center">
                             <div className="profile-pic rounded-full">
-                                <img src="/temporary/vansh-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
+                                <img src={user.profilePic} alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
                             </div>
                             <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Vansh</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-PB5911</span>
+                                <span className="text-themeBlack text-lg md:text-2xl">{user.name}</span> 
+                                <span className="text-xs md:text-xl text-themeBlue">{user.GoSipID}</span>
                             </div>
                         </div>
 
                         <div className="flex flex-row gap-2 md:gap-3">
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer">
+                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer" onClick={() => acceptRequest(user.GoSipID)}>
                                 <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
                                 <i className="fa-solid fa-check text-white block md:hidden"></i>
                             </div>
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeRed transition-colors duration-300 cursor-pointer">
-                                <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-xmark text-white block md:hidden"></i>
+                            <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack ${!rejectingRequestsOfUsers.includes(user.GoSipID) ? 'hover:bg-themeRed transition-colors duration-300 cursor-pointer' : ''}`} onClick={() => rejectRequest(user.GoSipID)}>
+                                {!rejectingRequestsOfUsers.includes(user.GoSipID) && <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>}
+                                {!rejectingRequestsOfUsers.includes(user.GoSipID) && <i className="fa-solid fa-xmark text-white block md:hidden"></i>}
+                                {rejectingRequestsOfUsers.includes(user.GoSipID) && <Spinner />}
                             </div>
                         </div>
-                    </li>
-
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
-                        <div className="flex flex-row gap-3 md:gap-5 items-center">
-                            <div className="profile-pic rounded-full">
-                                <img src="/temporary/manav-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
-                            </div>
-                            <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Manav</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-PB4041</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-row gap-2 md:gap-3">
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer">
-                                <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-check text-white block md:hidden"></i>
-                            </div>
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeRed transition-colors duration-300 cursor-pointer">
-                                <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-xmark text-white block md:hidden"></i>
-                            </div>
-                        </div>
-                    </li>
-
-                    <li className="min-h-20 md:min-h-28 w-full rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-3 md:px-5">
-                        <div className="flex flex-row gap-3 md:gap-5 items-center">
-                            <div className="profile-pic rounded-full">
-                                <img src="/temporary/jaskaran-profile.jpg" alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
-                            </div>
-                            <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
-                                <span className="text-themeBlack text-lg md:text-2xl">Jaskaran</span> 
-                                <span className="text-sm md:text-xl text-themeBlue">GS-E050FF</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-row gap-2 md:gap-3">
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer">
-                                <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-check text-white block md:hidden"></i>
-                            </div>
-                            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeRed transition-colors duration-300 cursor-pointer">
-                                <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-xmark text-white block md:hidden"></i>
-                            </div>
-                        </div>
-                    </li>
+                    </li>))}
                 </ul>
-            </div>
+            </div>}
+
+            {friendRequests && friendRequests.length === 1 && <div className="w-full h-[250px] md:h-[300px] flex justify-center items-center">
+                <div className="min-h-20 md:min-h-28 w-[95%] md:w-[90%] rounded-2xl bg-themeInputBg flex flex-row items-center justify-between px-2 md:px-5">
+                    <div className="flex flex-row gap-3 md:gap-5 items-center">
+                        <div className="profile-pic rounded-full">
+                          <img src={friendRequests[0].profilePic} alt="Profile Pic" className="w-16 h-16 md:w-24 md:h-24 rounded-full"/>
+                        </div>
+                        <div className="flex flex-col h-16 md:h-24 justify-center gap-1 md:gap-3">
+                            <span className="text-themeBlack text-lg md:text-2xl">{friendRequests[0].name}</span> 
+                            <span className="text-xs md:text-xl text-themeBlue">{friendRequests[0].GoSipID}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-row gap-2 md:gap-3">
+                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer" onClick={() => acceptRequest(friendRequests[0].GoSipID)}>
+                            <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
+                            <i className="fa-solid fa-check text-white block md:hidden"></i>
+                        </div>
+                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeRed transition-colors duration-300 cursor-pointer" onClick={() => rejectRequest(friendRequests[0].GoSipID)}>
+                            <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>
+                            <i className="fa-solid fa-xmark text-white block md:hidden"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>}
+
+            {!friendRequests && <div className="w-full h-[250px] md:h-[300px] flex justify-center items-center">
+              <BigSpinner />
+            </div>}
+
+            {friendRequests && friendRequests.length === 0 && <div className="w-full h-[250px] md:h-[300px] flex justify-center items-center">
+              <span className="text-3xl text-themeBlue text-center font-black max-w-[90%]">No Friend Requests Yet !</span>
+            </div>}
 
             <div className="absolute top-7 right-7 md:right-10">
                 <i className="fa-solid fa-xmark fa-2xl text-themeBlack hover:text-themeBlue transition-colors duration-300 cursor-pointer" onClick={closeInboxModal}></i>

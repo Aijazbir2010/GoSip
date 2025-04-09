@@ -7,5 +7,6 @@ export type userType = {
   GoSipID: string,
   color: string,
   friends: string[],
+  friendRequests: string[],
   __v: number,
 }

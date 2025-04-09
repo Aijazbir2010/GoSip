@@ -3,7 +3,6 @@ export type chatRoomType = {
     friend: {
         name: string,
         profilePic: string,
-        isOnline: boolean,
         GoSipID: string,
     },
     unreadCount: number,

@@ -141,7 +141,7 @@ const Profile = () => {
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
-        <NaviagtionBar profilePic={user?.profilePic || '/GoSipDefaultProfilePic.jpg'}/>
+        <NaviagtionBar userProp={user}/>
 
         <div className="w-full h-[calc(100vh-6.5rem)] xl:h-auto bg-themeBgGray rounded-2xl flex justify-center items-center py-4">
             <div className="w-full max-h-[95%] flex flex-col items-center gap-5 overflow-y-auto no-scrollbar">
