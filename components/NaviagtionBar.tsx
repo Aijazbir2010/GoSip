@@ -57,7 +57,7 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
     setQuery(e.target.value)
     const query = e.target.value
 
-    if (!query) {
+    if (query.trim() === '') {
       setUsers([])
       return
     }
@@ -279,7 +279,7 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
             </div>
             <div className="inbox-icon relative" onClick={openInboxModal}>
                 <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
-                {/* <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px] ${isInboxModalOpen ? 'hidden' : 'block'}`}/> */}
+                {unreadNotificationsCount > 0 && <div className="w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]"/>}
             </div>
             <Link to={'/profile'} className={`profile-icon`}>
                 <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
@@ -302,7 +302,7 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
                 </div>
                 <div className="inbox-icon relative" onClick={openInboxModal}>
                     <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
-                    {unreadNotificationsCount > 0 && <div className={`w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]`}/>}
+                    {unreadNotificationsCount > 0 && <div className="w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]"/>}
                 </div>
                 <Link to={'/profile'} className={`profile-icon`}>
                     <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>

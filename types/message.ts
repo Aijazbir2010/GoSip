@@ -4,5 +4,6 @@ export type messageType = {
     senderGoSipID: string,
     text: string,
     readBy: string[],
+    deletedFor?: string[],
     createdAt?: string | Date,
 }

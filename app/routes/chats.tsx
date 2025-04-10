@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import socket from "~/socket";
 import NaviagtionBar from "@components/NaviagtionBar"
 import ChatsList from "@components/ChatsList";
@@ -55,6 +55,8 @@ const Chats = () => {
   const loaderData = useLoaderData<{ user: userType, chatRooms: chatRoomType[], friendRequests: { name: string, GoSipID: string, profilePic: string }[] }>()
   const [user, setUser] = useState<userType | null>(null)
   const [chatRooms, setChatRooms] = useState<chatRoomType[] | null>(null)
+  const allChatRoomsRef = useRef(loaderData.chatRooms)
+  const [query, setQuery] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -81,7 +83,17 @@ const Chats = () => {
       setChatRooms((prev) => {
         if (!prev) return prev
 
+        allChatRoomsRef.current = [...prev, data]
         return [...prev, data]
+      })
+    }
+
+    const removedFriendHandler = (GoSipID: string) => {
+      setChatRooms((prev) => {
+        if (!prev) return prev
+
+        allChatRoomsRef.current = prev.filter(chatRoom => chatRoom.friend.GoSipID !== GoSipID)
+        return prev.filter(chatRoom => chatRoom.friend.GoSipID !== GoSipID)
       })
     }
 
@@ -89,17 +101,33 @@ const Chats = () => {
 
     socket.on('acceptedRequest', acceptedRequestHandler)
 
+    socket.on('removedFriend', removedFriendHandler)
+
     return () => {
       socket.off('unreadCountUpdate', unreadCountUpdateHandler)
       socket.off('acceptedRequest', acceptedRequestHandler)
+      socket.off('removedFriend', removedFriendHandler)
     }
   }, [])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value
+    setQuery(query)
+
+    if (query.trim() === '') {
+      setChatRooms(allChatRoomsRef.current)
+      return
+    }
+
+    setChatRooms(allChatRoomsRef.current.filter(chatRoom => chatRoom.friend.name.toLowerCase().includes(query.toLowerCase()) || chatRoom.friend.GoSipID.includes(query.toUpperCase())))
+    
+  }
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
         <NaviagtionBar userProp={user} friendRequestsProp={loaderData.friendRequests}/>
 
-        <ChatsList chatRooms={chatRooms}/>
+        <ChatsList chatRooms={chatRooms} searchBarValue={query} handleSearchBarChange={handleSearch}/>
 
         {chatId ? <Outlet /> : <GoSipLogoBox />}
     </div>

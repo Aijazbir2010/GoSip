@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react"
 import socket from "~/socket"
+import { fetchWithAuth } from "utils/fetchWithAuth"
 import Picker from "@emoji-mart/react"
 import data from "@emoji-mart/data"
 import BigSpinner from "./BigSpinner"
+import Spinner from "./Spinner"
+import TextArea from "./TextArea"
 import Modal from 'react-modal'
 
 import type { userType } from "types/user"
@@ -24,6 +27,8 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
   const [isNearBottom, setIsNearBottom] = useState(true)
   const isNearBottomRef = useRef(true)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isRemovingFriend, setIsRemovingFriend] = useState(false)
+  const [isDeletingMessages, setIsDeletingMessages] = useState(false)
 
   // For Rendering Emoji Picker (To Prevent SSR Issues)
   useEffect(() => {
@@ -168,7 +173,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
   }, [chatRoomID])
 
-  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value)
 
     socket.emit('typing', { to: friend?.GoSipID, chatRoomID })
@@ -202,6 +207,26 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
       setNewMessage("")
     }
+  }
+
+  const removeFriend = () => {
+    setIsRemovingFriend(true)
+
+    socket.emit('removeFriend', { GoSipID: friend?.GoSipID, chatRoomID })
+
+    setIsRemovingFriend(false)
+
+    window.location.href = '/chats'
+  }
+
+  const deleteAllMessagesForUser = async () => {
+    setIsDeletingMessages(true)
+
+    const response = await fetchWithAuth('/chats/deletemessagesforme', { method: 'POST', data: { chatRoomID }, isServer: false })
+
+    setMessages([])
+
+    setIsDeletingMessages(false)
   }
 
   const handleEmojiSelect = (emoji: any) => {
@@ -268,6 +293,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
   const closeRemoveFriendWarningModal = () => {
     setIsRemoveFriendWarningModalOpen(false)
+    setIsFriendProfileModalOpen(true)
   }
 
   useEffect(() => {
@@ -381,11 +407,11 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
   return (
     <div className="xl:w-[50%] w-full h-[calc(100vh-6.5rem)] xl:h-auto bg-themeBgGray rounded-2xl flex flex-col gap-5 items-center py-4">
-        {(!user || !friend || !messages) && <div className="w-full h-full flex justify-center items-center">
+        {(!user || !friend || !messages || isDeletingMessages) && <div className="w-full h-full flex justify-center items-center">
           <BigSpinner />
         </div>}
         
-        {user && friend && messages && <div className="header flex flex-row items-center justify-between px-3 md:px-5 w-full h-28">
+        {user && friend && messages && !isDeletingMessages && <div className="header flex flex-row items-center justify-between px-3 md:px-5 w-full h-28">
             <div className="flex flex-row items-center gap-3 md:gap-5">
                 <div className="profile-pic rounded-full">
                     <img src={friend.profilePic} alt="Profile Pic" className="w-20 h-20 md:w-24 md:h-24 rounded-full"/>
@@ -410,7 +436,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
             </div>
         </div>}
 
-        {user && friend && messages && messages.length > 0 && <ul ref={ulRef} onScroll={handleScroll} className="main-chat-area w-full h-full max-h-full overflow-y-auto no-scrollbar flex flex-col gap-4 px-3 md:px-5">
+        {user && friend && messages && messages.length > 0 && !isDeletingMessages && <ul ref={ulRef} onScroll={handleScroll} className="main-chat-area w-full flex-1 max-h-full overflow-y-auto no-scrollbar flex flex-col gap-4 px-3 md:px-5">
             {messages.map((message, index) => (<li key={index} className={`message-container w-full flex ${message.senderGoSipID === user.GoSipID ? 'justify-end' : 'justify-start'}`}>
                 <div className={`message flex flex-col gap-1 w-full ${message.senderGoSipID === user.GoSipID ? 'items-end' : 'items-start'}`}>
                     <div className="flex flex-row gap-2 items-center">
@@ -424,35 +450,39 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
             </li>))}
         </ul>}
 
-        {user && friend && messages && messages.length === 0 && <div className="w-full h-full flex justify-center items-center">
+        {user && friend && messages && messages.length === 0 && !isDeletingMessages && <div className="w-full h-full flex flex-col gap-2 justify-center items-center">
           <span className="text-themeBlue text-3xl font-black">No Messages Yet !</span>
+          <span className="text-themeBlue text-lg md:text-xl text-center font-black max-w-[90%]">&#40; Messages only stay for 24 hours in the Chat &#41;</span>
         </div>}
 
-        {user && friend && messages && <div className="message-input-area w-full flex flex-row gap-2 xl:gap-5 px-3 md:px-5 relative">
-            <div className="emoji-box bg-themeBlack w-16 h-16 rounded-2xl flex justify-center items-center hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onMouseDown={() => setShowEmojiPicker((prev) => !prev)}>
-                <i className="fa-solid fa-face-laugh fa-xl text-white"></i>
-            </div>
+        {user && friend && messages && !isDeletingMessages && <div className="message-input-area w-full h-16 relative">
+          <div className="absolute w-full bottom-0 left-0">
+              <div className="w-full flex flex-row items-end gap-2 xl:gap-4 px-3 md:px-5 relative">
+                <div className="emoji-box bg-themeBlack w-16 h-16 rounded-2xl flex justify-center items-center hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onMouseDown={() => setShowEmojiPicker((prev) => !prev)}>
+                    <i className="fa-solid fa-face-laugh fa-xl text-white"></i>
+                </div>
 
-            <div className="flex flex-row w-full rounded-2xl">
-                <input type="text" className="bg-themeInputBg w-full rounded-l-2xl h-16 px-4 text-themeBlack placeholder:text-themeTextGray outline-none border-none" placeholder="Type a message" value={newMessage} onChange={handleTyping}/>
-                <div className="h-16 w-20 rounded-r-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={sendMessage}>
+                <TextArea value={newMessage} placeholder="Type a message" handleChange={handleTyping}/>
+
+                <div className="h-16 w-16 rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={sendMessage}>
                     <img src="/icons/sendicon.svg" alt="SendIcon" className="h-8"/>
                 </div>
-            </div>
 
-            {isClient && showEmojiPicker && (<div ref={emojiPickerRef} className="absolute z-10 bottom-0 translate-y-[-20%]">
-                <Picker data={data} onEmojiSelect={handleEmojiSelect} />
-            </div>)}    
+                {isClient && showEmojiPicker && (<div ref={emojiPickerRef} className="absolute z-10 bottom-0 translate-y-[-20%]">
+                    <Picker data={data} onEmojiSelect={handleEmojiSelect} />
+                </div>)}    
 
-            {unreadCount > 0 && <div className="absolute z-20 top-0 translate-y-[-150%] left-[50%] translate-x-[-50%] px-4 py-2 rounded-2xl flex flex-row items-center gap-2 bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => {
-              ulRef.current?.scrollTo({ top: ulRef.current.scrollHeight, behavior: 'smooth' })
-              setUnreadCount(0)
-            }}>
-                <span className="text-white font-bold">{unreadCount} Unread Message{unreadCount > 1 ? 's' : ''}</span>
-                <i className="fa-solid fa-chevron-down text-white"></i>
-            </div>}
-        </div>}
-
+                {unreadCount > 0 && <div className="absolute z-20 top-0 translate-y-[-150%] left-[50%] translate-x-[-50%] px-4 py-2 rounded-2xl flex flex-row items-center gap-2 bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={() => {
+                  ulRef.current?.scrollTo({ top: ulRef.current.scrollHeight, behavior: 'smooth' })
+                  setUnreadCount(0)
+                }}>
+                    <span className="text-white font-bold">{unreadCount} Unread Message{unreadCount > 1 ? 's' : ''}</span>
+                    <i className="fa-solid fa-chevron-down text-white"></i>
+                </div>}
+              </div>
+          </div>
+        </div>}  
+        
         <Modal isOpen={isFriendProfileModalOpen} onRequestClose={closeFriendProfileModal} contentLabel="Friend Profile Modal" style={friendProfileModalCustomStyles}>
             <div className="flex h-full w-full justify-center items-center">
                 <div className="w-full flex flex-col items-center gap-5">
@@ -470,7 +500,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
                     </div>
 
                     <div className="w-[95%] md:w-[w-90%]">
-                        <button className="w-full h-16 rounded-2xl text-white font-bold bg-themeBlack border-none outline-none hover:bg-themeRed transition-colors duration-300" onClick={openRemoveFriendWarningModal}>Remove Friend</button>
+                        <button className={`w-full h-16 rounded-2xl flex justify-center items-center text-white font-bold bg-themeBlack border-none outline-none ${!isRemovingFriend ? 'hover:bg-themeRed transition-colors duration-300' : ''}`} disabled={isRemovingFriend} onClick={openRemoveFriendWarningModal}>{isRemovingFriend ? <Spinner /> : 'Remove Friend'}</button>
                     </div>
                 </div>
             </div>
@@ -483,10 +513,10 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
         <Modal isOpen={isDeleteAllMessagesModalOpen} onRequestClose={closeDeleteAllMessagesModal} contentLabel="Delete All Messages Modal" style={deleteWarningModalsCustomStyles}>
             <div className="flex w-full h-full justify-center items-center">
                 <div className="flex flex-col w-[90%] items-center gap-7">
-                    <span className="text-themeBlue font-black text-4xl md:text-5xl text-center">Are you sure you want to delete all the messages ?</span>
+                    <span className="text-themeBlue font-black text-4xl md:text-5xl text-center">Are you sure you want to delete all the messages for you ?</span>
 
                     <div className="flex flex-row gap-5">
-                        <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeBlue transition-colors duration-300" onClick={closeDeleteAllMessagesModal}>Yes</button>
+                        <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeBlue transition-colors duration-300" onClick={() => {closeDeleteAllMessagesModal(); deleteAllMessagesForUser()}}>Yes</button>
                         <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeRed transition-colors duration-300" onClick={closeDeleteAllMessagesModal}>No</button>
                     </div>
                 </div>        
@@ -499,7 +529,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
                     <span className="text-themeBlue font-black text-4xl md:text-5xl text-center">Are you sure you want to remove this friend ?</span>
 
                     <div className="flex flex-row gap-5">
-                        <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeBlue transition-colors duration-300" onClick={closeRemoveFriendWarningModal}>Yes</button>
+                        <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeBlue transition-colors duration-300" onClick={() => {closeRemoveFriendWarningModal(); removeFriend()}}>Yes</button>
                         <button className="h-16 w-20 rounded-2xl text-white font-bold outline-none border-none bg-themeBlack hover:bg-themeRed transition-colors duration-300" onClick={closeRemoveFriendWarningModal}>No</button>
                     </div>
                 </div>        
