@@ -6,8 +6,10 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   useRouteError,
+  useLoaderData,
   Link
 } from "@remix-run/react";
+import { json } from '@remix-run/node'
 import { useEffect } from "react";
 import Modal from "react-modal";
 import type { LinksFunction } from "@remix-run/node";
@@ -15,6 +17,10 @@ import type { LinksFunction } from "@remix-run/node";
 import "./tailwind.css";
 import "./globals.css";
 import Footer from "@components/Footer";
+import ProgressBar from "@components/ProgressBar";
+import { Toaster } from 'react-hot-toast'
+import { toast as notify } from 'react-hot-toast'
+import { getToast } from 'remix-toast'
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -37,7 +43,26 @@ export const links: LinksFunction = () => [
   },
 ];
 
+export const loader = async ({ request }: { request: Request }) => {
+  try {
+    const { toast, headers } = await getToast(request)
+    return json({ toast }, { headers })
+  } catch (error) {
+    throw json({ error: 'Failed to load application data !' }, { status: 500 })
+  }
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+
+  const loaderData = useLoaderData<typeof loader>()
+  const toast = loaderData?.toast
+
+  useEffect(() => {
+    if (toast) {
+      notify(toast.message)
+    }
+  }, [toast])
+
   return (
     <html lang="en" className="bg-white">
       <head>
@@ -47,8 +72,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="bg-white no-scrollbar">
+        <ProgressBar />
         <div id="app">
           {children}
+          <Toaster />
         </div>
         <ScrollRestoration />
         <Scripts />

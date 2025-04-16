@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "@remix-run/react";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node"
 import Footer from "components/Footer";
 import Spinner from "@components/Spinner";
@@ -8,6 +8,7 @@ import { getUser } from "utils/getUser";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import toast from "react-hot-toast";
 
 import type { MetaFunction } from "@remix-run/node";
 
@@ -66,6 +67,7 @@ const loginValidationSchema = Yup.object().shape({
 
 const Login = () => {
 
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isLoggingUserIn, setIsLoggingUserIn] = useState(false)
 
@@ -93,11 +95,16 @@ const Login = () => {
 
       setIsLoggingUserIn(false)
 
-      window.location.href = '/chats'
+      window.location.href = '/chats?msg=LoginSuccessful'
 
-    } catch (error) {
+    } catch (error: any) {
       setIsLoggingUserIn(false)
-      console.log('Unable to log in user !', error)
+
+      if (error.response && error.response.data.error === 'Invalid Password !') {
+        toast('Invalid Password !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (error.response && error.response.data.error === 'No Account Exists With This E-mail or GoSipID !') {
+        toast('No Account Exists With This E-mail or GoSipID !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      }
     }
   }
 
@@ -110,6 +117,35 @@ const Login = () => {
 
     window.location.href = `/forgotpassword?identifier=${encodeURIComponent(identifier)}&isEmailSent=false`
   }
+
+  useEffect(() => {
+    const msg = searchParams.get('msg')
+
+    if (msg) {
+      if (msg === 'NoIdentifier') {
+        toast('No E-mail or GoSipID Provied !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (msg === 'SessionExpired') {
+        toast('Session Expired ! Please Log in !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (msg === 'CannotSendCode') {
+        toast('Cannot Send Verification Code ! Server Error !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (msg === 'NoUserFound') {
+        toast('No User Was Found With This E-mail or GoSipID !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (msg === 'PasswordResetSuccessful') {
+        toast.success('Password Reset Successful !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      }
+
+      const timeout = window.setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('msg')
+        setSearchParams(params)
+      }, 3000)
+
+      return () => {
+        window.clearTimeout(timeout)
+      }
+    }
+
+  }, [searchParams])
 
   return (
     <div className="w-full flex flex-col">

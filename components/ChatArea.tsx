@@ -209,14 +209,20 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
   const removeFriend = () => {
     setIsRemovingFriend(true)
 
-    socket.emit('removeFriend', { GoSipID: friend?.GoSipID, chatRoomID })
-
-    setIsRemovingFriend(false)
-
-    window.location.href = '/chats'
+    socket.emit('removeFriend', { GoSipID: friend?.GoSipID, chatRoomID }, () => {
+      setIsRemovingFriend(false)
+      window.location.href = '/chats'
+    })
   }
 
   const deleteAllMessagesForUser = async () => {
@@ -428,10 +434,12 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
 
             <div className="icons flex flex-row items-center gap-5 md:gap-10">
                 <div className="user-profile-icon" onClick={openFriendProfileModal}>
-                    <i className={`fa-solid fa-user fa-2xl ${isFriendProfileModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
+                    <i className={`fa-solid fa-user fa-2xl ${isFriendProfileModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer hidden md:block`}></i>
+                    <i className={`fa-solid fa-user fa-xl ${isFriendProfileModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer block md:hidden`}></i>
                 </div>
                 <div className="delete-chat-icon" onClick={openDeleteAllMessagesModal}>
-                    <i className={`fa-solid fa-trash fa-2xl ${isDeleteAllMessagesModalOpen ? 'text-themeRed' : 'text-themeBlack'} hover:text-themeRed transition-colors duration-300 cursor-pointer`}></i>
+                    <i className={`fa-solid fa-trash fa-2xl ${isDeleteAllMessagesModalOpen ? 'text-themeRed' : 'text-themeBlack'} hover:text-themeRed transition-colors duration-300 cursor-pointer hidden md:block`}></i>
+                    <i className={`fa-solid fa-trash fa-xl ${isDeleteAllMessagesModalOpen ? 'text-themeRed' : 'text-themeBlack'} hover:text-themeRed transition-colors duration-300 cursor-pointer block md:hidden`}></i>
                 </div>
             </div>
         </div>}
@@ -462,7 +470,7 @@ const ChatArea = ({ user, friend, messagesProp, chatRoomID }: { user: userType |
                     <i className="fa-solid fa-face-laugh fa-xl text-white"></i>
                 </div>
 
-                <TextArea value={newMessage} placeholder="Type a message" handleChange={handleTyping}/>
+                <TextArea value={newMessage} placeholder="Type a message" handleChange={handleTyping} handleKeyDown={handleKeyDown}/>
 
                 <div className="h-16 w-16 rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeBlue transition-colors duration-300 cursor-pointer" onClick={sendMessage}>
                     <img src="/icons/sendicon.svg" alt="SendIcon" className="h-8"/>

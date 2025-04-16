@@ -45,7 +45,7 @@ const ChatsList = ({ chatRooms, searchBarValue, handleSearchBarChange }: { chatR
             <span className="text-themeBlue font-black text-5xl">Chats</span>
         </div>
 
-        <SearchBar placeholder="Search by Name or GoSip ID" value={searchBarValue} handleChange={handleSearchBarChange}/>
+        {chatRooms && <SearchBar placeholder="Search by Name or GoSip ID" value={searchBarValue} handleChange={handleSearchBarChange}/>}
 
         {chatRooms && chatRooms.length > 0 && (<ul className="w-[95%] md:w-[90%] max-h-full space-y-5 overflow-y-auto no-scrollbar">
             {chatRooms.map((room) => (<li key={room.chatRoomID}>

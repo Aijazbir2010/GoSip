@@ -8,6 +8,7 @@ import axiosInstance from "~/axios";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import toast from 'react-hot-toast'
 
 import type { MetaFunction } from "@remix-run/node";
 
@@ -65,12 +66,12 @@ export const loader = async ({ request }: { request: Request }) => {
   } catch (error: any) {
     
       if (error.response && error.response.status === 500) {
-        return redirect('/login')
+        return redirect('/login?msg=CannotSendCode')
       } else if (error.response && error.response.status === 404) {
-        return redirect('/login')
+        return redirect('/login?msg=NoUserFound')
       }
     
-      return redirect('/login')
+      return redirect('/login?msg=CannotSendCode')
     
   }
 }
@@ -119,7 +120,6 @@ const ForgotPassword = () => {
       setSearchParams({identifier: loaderData.identifier, isEmailSent: 'true'})
     }
     if (loaderData.email) {
-      console.log('Setting E-mail')
       setEmail(loaderData.email)
     }
   }, [loaderData, searchParams])
@@ -127,6 +127,7 @@ const ForgotPassword = () => {
   useEffect(() => {
     setTimeLeft(60)
     setIsResendDisabled(true)
+    toast.success('Verification Code Sent Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
   }, [])
 
   useEffect(() => {
@@ -168,7 +169,6 @@ const ForgotPassword = () => {
     const email = loaderData.email
 
     if (!email) {
-      console.log('No E-mail Provided !')
       return
     }
 
@@ -180,13 +180,13 @@ const ForgotPassword = () => {
       setIsSendingCode(false)
       setTimeLeft(60)
       setIsResendDisabled(true)
+      toast.success('Verification Code Sent Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
     } catch (error: any) {
-      console.log('Cannot Send E-mail !', error)
       setIsSendingCode(false)
       setTimeLeft(0)
       setIsResendDisabled(false)
       if (error.response && error.response.status === 500) {
-        console.log('Cannot Send E-mail ! Server Error !')
+        toast('Cannot Send Verification Code ! Server Error !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
       }
     }
   }
@@ -195,7 +195,6 @@ const ForgotPassword = () => {
     const email = loaderData.email
 
     if (!email) {
-      console.log('No E-mail Provided !')
       return
     }
 
@@ -211,10 +210,16 @@ const ForgotPassword = () => {
 
       setIsResettingPassword(false)
 
-      window.location.href = '/login'
-    } catch (error) {
+      window.location.href = '/login?msg=PasswordResetSuccessful'
+
+    } catch (error: any) {
       setIsResettingPassword(false)
-      console.log('Unable to reset Password !', error)
+      if (error.response && error.response.data.error === 'Verification Code Expired !') {
+        toast('Verification Code Expired !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (error.response && error.response.data.error === 'Invalid Verification Code !') {
+        toast('Invalid Verification Code !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      }
+
     }
   }
 

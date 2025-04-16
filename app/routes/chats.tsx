@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import socket from "~/socket";
-import NaviagtionBar from "@components/NaviagtionBar"
+import NavigationBar from "@components/NavigationBar"
 import ChatsList from "@components/ChatsList";
 import GoSipLogoBox from "@components/GoSipLogoBox";
 import { getUser } from "utils/getUser";
 import { getChatRooms } from "utils/getChatRooms";
 import { getFriendRequests } from "utils/getFriendRequests";
+import toast from "react-hot-toast";
 
-import { Outlet, useParams, useLoaderData } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
+import { Outlet, useParams, useLoaderData, useSearchParams } from "@remix-run/react";
+import { json, redirect, createCookie } from "@remix-run/node";
 
 import type { userType } from "types/user";
 import type { chatRoomType } from "types/chatRoom";
@@ -36,6 +37,21 @@ export const loader = async ({ request }: { request: Request }) => {
 
   const response = await getUser(request, responseHeaders)
 
+  if (response === 'SessionExpired') {
+    const refreshTokenCookie = createCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
+
+    const headers = new Headers()
+
+    headers.append("Set-Cookie", await refreshTokenCookie.serialize("", { maxAge: 0 }))
+
+    return redirect('/login?msg=SessionExpired', { headers })
+  }
+
   const user = response?.user || null
 
   if (!user) {
@@ -51,6 +67,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
 const Chats = () => {
 
+  const [searchParams, setSearchParams] = useSearchParams()
   const { chatId } = useParams()
   const loaderData = useLoaderData<{ user: userType, chatRooms: chatRoomType[], friendRequests: { name: string, GoSipID: string, profilePic: string }[] }>()
   const [user, setUser] = useState<userType | null>(null)
@@ -69,6 +86,29 @@ const Chats = () => {
   }, [loaderData])
 
   useEffect(() => {
+    const msg = searchParams.get('msg')
+
+    if (msg) {
+      if (msg === 'LoginSuccessful') {
+        toast.success('Logged In Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (msg === 'RegisterSuccessful') {
+        toast.success('Registered Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      }
+
+      const timeout = window.setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('msg')
+        setSearchParams(params)
+      }, 3000)
+
+      return () => {
+        window.clearTimeout(timeout)
+      }
+    }
+
+  }, [searchParams])
+
+  useEffect(() => {
     socket.emit('join')
 
     const unreadCountUpdateHandler = ({ chatRoomID, unreadCount }: { chatRoomID: string, unreadCount: number }) => {
@@ -83,7 +123,7 @@ const Chats = () => {
       setChatRooms((prev) => {
         if (!prev) return prev
 
-        allChatRoomsRef.current = [...prev, data]
+        allChatRoomsRef.current = [...allChatRoomsRef.current, data]
         return [...prev, data]
       })
     }
@@ -92,7 +132,7 @@ const Chats = () => {
       setChatRooms((prev) => {
         if (!prev) return prev
 
-        allChatRoomsRef.current = prev.filter(chatRoom => chatRoom.friend.GoSipID !== GoSipID)
+        allChatRoomsRef.current = allChatRoomsRef.current.filter(chatRoom => chatRoom.friend.GoSipID !== GoSipID)
         return prev.filter(chatRoom => chatRoom.friend.GoSipID !== GoSipID)
       })
     }
@@ -125,7 +165,7 @@ const Chats = () => {
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
-        <NaviagtionBar userProp={user} friendRequestsProp={loaderData.friendRequests}/>
+        <NavigationBar userProp={user} friendRequestsProp={loaderData.friendRequests}/>
 
         <ChatsList chatRooms={chatRooms} searchBarValue={query} handleSearchBarChange={handleSearch}/>
 

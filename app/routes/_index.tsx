@@ -1,7 +1,10 @@
+import { useSearchParams } from "@remix-run/react";
+import { useEffect } from "react";
 import Navbar from "components/Navbar";
 import Footer from "components/Footer";
 import { json, redirect } from "@remix-run/node"
 import { getUser } from "utils/getUser";
+import toast from "react-hot-toast";
 
 import type { MetaFunction } from "@remix-run/node";
 
@@ -38,6 +41,23 @@ export const loader = async ({ request }: { request: Request }) => {
 }
 
 export default function Index() {
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const msg = searchParams.get('msg')
+
+    if (msg && msg === 'LogoutSuccessful') {
+      toast.success('Logged Out Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+
+      const timeout = window.setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete('msg')
+        setSearchParams(params)
+      }, 3000)
+    }
+  }, [searchParams])
+
   return (
     <>
         <Navbar />

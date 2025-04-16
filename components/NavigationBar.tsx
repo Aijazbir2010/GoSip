@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Link, useLocation, useParams } from "@remix-run/react"
+import { useLocation, useParams } from "@remix-run/react"
 import Modal from 'react-modal'
 import SearchBar from "./SearchBar"
 import BigSpinner from "./BigSpinner"
@@ -9,7 +9,7 @@ import socket from "~/socket"
 
 import type { userType } from "types/user"
 
-const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | null, friendRequestsProp: { name: string, GoSipID: string, profilePic: string }[] }) => {
+const NavigationBar = ({ userProp, friendRequestsProp }: { userProp: userType | null, friendRequestsProp: { name: string, GoSipID: string, profilePic: string }[] }) => {
 
   const location = useLocation()  
   const { chatId, groupchatId } = useParams()
@@ -46,6 +46,12 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
     }
 
   }, [])
+
+  useEffect(() => {
+    if (userProp) {
+      setUnreadNotificationsCount(userProp.unreadNotifications)
+    }
+  }, [userProp])
 
   useEffect(() => {
     if (!friendRequests) {
@@ -133,9 +139,10 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
     setQuery("")
   }
 
-  const openInboxModal = () => {
+  const openInboxModal = async () => {
     setIsInboxModalOpen(true)
     setUnreadNotificationsCount(0)
+    const response = await fetchWithAuth('/user/readNotifications', { method: 'GET', isServer: false })
   }
 
   const closeInboxModal = () => {
@@ -265,15 +272,15 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
   return (
     <>
         <div className="w-full h-20 xl:h-auto xl:w-20 bg-themeBgGray rounded-2xl hidden md:flex flex-row xl:flex-col gap-10 justify-around xl:justify-start items-center py-4">
-            <Link to={'/chats'} className="logo">
+            <a href={'/chats'} className="logo">
                 <img src="/GoSipLogo.svg" alt="Logo" className="h-14 w-14 hover:scale-110 transition-transform duration-300"/>
-            </Link>
-            <Link to={'/chats'} className="chats-icon">
+            </a>
+            <a href={'/chats'} className="chats-icon">
                 <i className={`fa-solid fa-message fa-2xl ${(location.pathname === '/chats' || location.pathname === '/chats/') ? 'text-themeBlue' : chatId ? 'xl:text-themeBlue text-themeBlack' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300`}></i>
-            </Link>
-            <Link to={'/groupchats'} className="groupchats-icon">
+            </a>
+            <a href={'/groupchats'} className="groupchats-icon">
                 <i className={`fa-solid fa-users fa-2xl ${(location.pathname === '/groupchats' || location.pathname === '/groupchats/') ? 'text-themeBlue' : groupchatId ? 'xl:text-themeBlue text-themeBlack' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300`}></i>
-            </Link>
+            </a>
             <div className="addfriends-icon" onClick={openAddFriendsModal}>
                 <i className={`fa-solid fa-user-plus fa-2xl ${isAddFriendsModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
             </div>
@@ -281,22 +288,22 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
                 <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
                 {unreadNotificationsCount > 0 && <div className="w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]"/>}
             </div>
-            <Link to={'/profile'} className={`profile-icon`}>
+            <a href={'/profile'} className={`profile-icon`}>
                 <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
-            </Link>
+            </a>
         </div>
 
         <div className="w-full h-20 bg-themeBgGray rounded-2xl block md:hidden overflow-x-auto no-scrollbar">
             <div className="mx-auto flex flex-row items-center justify-around gap-5 w-[700px] h-full rounded-2xl">
-                <Link to={'/chats'} className="logo">
+                <a href={'/chats'} className="logo">
                     <img src="/GoSipLogo.svg" alt="Logo" className="h-14 w-14 hover:scale-110 transition-transform duration-300"/>
-                </Link>
-                <Link to={'/chats'} className="chats-icon">
+                </a>
+                <a href={'/chats'} className="chats-icon">
                     <i className={`fa-solid fa-message fa-2xl ${(location.pathname === '/chats' || location.pathname === '/chats/') ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300`}></i>
-                </Link>
-                <Link to={'/groupchats'} className="groupchats-icon">
+                </a>
+                <a href={'/groupchats'} className="groupchats-icon">
                     <i className={`fa-solid fa-users fa-2xl ${(location.pathname === '/groupchats' || location.pathname === '/groupchats/') ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
-                </Link>
+                </a>
                 <div className="addfriends-icon" onClick={openAddFriendsModal}>
                     <i className={`fa-solid fa-user-plus fa-2xl ${isAddFriendsModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
                 </div>
@@ -304,9 +311,9 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
                     <i className={`fa-solid fa-envelope fa-2xl ${isInboxModalOpen ? 'text-themeBlue' : 'text-themeBlack'} hover:text-themeBlue transition-colors duration-300 cursor-pointer`}></i>
                     {unreadNotificationsCount > 0 && <div className="w-3 h-3 rounded-full bg-themeBlue absolute top-[-4px] right-[-4px]"/>}
                 </div>
-                <Link to={'/profile'} className={`profile-icon`}>
+                <a href={'/profile'} className={`profile-icon`}>
                     <img src={userProp ? userProp.profilePic : '/GoSipDefaultProfilePic.jpg'} alt="Profile-Picture" className="h-14 w-14 rounded-full hover:scale-110 transition-transform duration-300"/>
-                </Link>
+                </a>
             </div>
         </div>
 
@@ -383,8 +390,9 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
 
                         <div className="flex flex-row gap-2 md:gap-3">
                             <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack hover:bg-themeGreen transition-colors duration-300 cursor-pointer" onClick={() => acceptRequest(user.GoSipID)}>
-                                <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>
-                                <i className="fa-solid fa-check text-white block md:hidden"></i>
+                                {!acceptingRequestsOfUsers.includes(user.GoSipID) && <i className="fa-solid fa-check fa-2xl text-white hidden md:block"></i>}
+                                {!acceptingRequestsOfUsers.includes(user.GoSipID) && <i className="fa-solid fa-check text-white block md:hidden"></i>}
+                                {acceptingRequestsOfUsers.includes(user.GoSipID) && <Spinner />}
                             </div>
                             <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex justify-center items-center bg-themeBlack ${!rejectingRequestsOfUsers.includes(user.GoSipID) ? 'hover:bg-themeRed transition-colors duration-300 cursor-pointer' : ''}`} onClick={() => rejectRequest(user.GoSipID)}>
                                 {!rejectingRequestsOfUsers.includes(user.GoSipID) && <i className="fa-solid fa-xmark fa-2xl text-white hidden md:block"></i>}
@@ -438,4 +446,4 @@ const NaviagtionBar = ({ userProp, friendRequestsProp }: { userProp: userType | 
   )
 }
 
-export default NaviagtionBar
+export default NavigationBar

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 
-const TextArea = ({ placeholder, value, handleChange }: { placeholder: string, value: string, handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void }) => {
+const TextArea = ({ placeholder, value, handleChange, handleKeyDown }: { placeholder: string, value: string, handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void }) => {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -21,7 +21,7 @@ const TextArea = ({ placeholder, value, handleChange }: { placeholder: string, v
   }, [value]);
 
   return (
-    <textarea ref={textareaRef} value={value} placeholder={placeholder} onChange={handleChange} rows={1} className="resize-none no-scrollbar flex-1 bg-themeInputBg w-full rounded-2xl px-4 py-5 text-themeBlack placeholder:text-themeTextGray outline-none border-none"/>
+    <textarea ref={textareaRef} value={value} placeholder={placeholder} onChange={handleChange} onKeyDown={handleKeyDown} rows={1} className="resize-none no-scrollbar flex-1 bg-themeInputBg w-full rounded-2xl px-4 py-5 text-themeBlack placeholder:text-themeTextGray outline-none border-none"/>
   )
 }
 

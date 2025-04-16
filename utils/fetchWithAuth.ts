@@ -64,13 +64,22 @@ export const fetchWithAuth = async (url: string, options: optionsType = {}) => {
 
                 return response.data
 
-            } catch (refreshError) {
-                console.log('Cannot Refresh Token !', refreshError)
+            } catch (refreshError: any) {
+                if (!options.isServer && refreshError.response && refreshError.response.data.error === 'Invalid Refresh Token !') {
+                    window.location.href = '/login?msg=SessionExpired'
+                } else if (options.isServer && refreshError.response && refreshError.response.data.error === 'Invalid Refresh Token !') {
+                    return 'SessionExpired'
+                }
             }
         }
 
         // To redirect users to /chats
         if (error.config.url === '/chats/messages' && error.response && error.response.status === 404) {
+            return null
+        }
+
+        // To redirect users to /groupchats
+        if (error.config.url === '/groupchats/messages' && error.response && error.response.status === 404) {
             return null
         }
 

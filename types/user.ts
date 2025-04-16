@@ -8,5 +8,6 @@ export type userType = {
   color: string,
   friends: string[],
   friendRequests: string[],
+  unreadNotifications: number,
   __v: number,
 }

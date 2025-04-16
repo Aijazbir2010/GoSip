@@ -8,6 +8,7 @@ import { getUser } from "utils/getUser";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import toast from "react-hot-toast";
 
 import type { MetaFunction } from "@remix-run/node";
 
@@ -97,10 +98,11 @@ const register = () => {
       setIsSendingCode(false)
       setIsResendDisabled(true)
       setTimeLeft(60)
+      toast.success('Verification Code Sent Successfully !', { duration: 2000, style: { background: '#4BB3FD', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
 
     } catch (error) {
       setIsSendingCode(false)
-      console.log('Unable to send code !', error)
+      toast('Failed To Send Verification Code !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
     }
   }
 
@@ -117,11 +119,17 @@ const register = () => {
 
       setIsRegisteringUser(false)
 
-      window.location.href = '/chats'
+      window.location.href = '/chats?msg=RegisterSuccessful'
 
-    } catch (error) {
+    } catch (error: any) {
       setIsRegisteringUser(false)
-      console.log('Unable to Register User !', error)
+      if (error.response && error.response.data.error === 'Verification Code Expired !') {
+        toast('Verification Code Expired !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (error.response && error.response.data.error === 'Invalid Verification Code !') {
+        toast('Invalid Verification Code !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      } else if (error.response && error.response.data.error === 'User already exists with this E-mail !') {
+        toast('User already exists with this E-mail !', { duration: 2000, style: { background: '#FF5353', color: '#FFF', fontWeight: 'bold', borderRadius: '12px', fontSize: '20px' } })
+      }
     }
   }
 

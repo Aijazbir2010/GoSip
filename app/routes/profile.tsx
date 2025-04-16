@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import NaviagtionBar from "@components/NaviagtionBar"
+import NavigationBar from "@components/NavigationBar"
 import Spinner from "@components/Spinner";
 import axiosInstance from "~/axios";
 import { fetchWithAuth } from "utils/fetchWithAuth";
 import { getUser } from "utils/getUser";
+import { getFriendRequests } from "utils/getFriendRequests";
 import { useLoaderData } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
+import { json, redirect, createCookie } from "@remix-run/node";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -35,13 +36,30 @@ export const loader = async ({ request }: { request: Request }) => {
 
   const response = await getUser(request, responseHeaders)
 
+  if (response === 'SessionExpired') {
+      const refreshTokenCookie = createCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/",
+      });
+  
+      const headers = new Headers()
+  
+      headers.append("Set-Cookie", await refreshTokenCookie.serialize("", { maxAge: 0 }))
+  
+      return redirect('/login?msg=SessionExpired', { headers })
+    }
+
   const user = response?.user || null
 
   if (!user) {
     return redirect('/login')
   }
 
-  return json({ user }, { headers: responseHeaders })
+  const friendRequests = await getFriendRequests(request)
+
+  return json({ user, friendRequests: friendRequests.users }, { headers: responseHeaders })
 
 }
 
@@ -64,7 +82,7 @@ const Profile = () => {
         mode: 'onChange',
   });
 
-  const loaderData = useLoaderData<{ user: userType }>()
+  const loaderData = useLoaderData<{ user: userType, friendRequests: { name: string, GoSipID: string, profilePic: string }[] }>()
   const GoSipIDInputRef = useRef<HTMLInputElement>(null)
   const [isCopied, setIsCopied] = useState(false)
   const [user, setUser] = useState<userType | null>(null)
@@ -100,7 +118,7 @@ const Profile = () => {
 
     setIsLoggingOutUser(false)
 
-    window.location.href = '/'
+    window.location.href = '/?msg=LogoutSuccessful'
   }
 
   const handleCopy = () => {
@@ -115,7 +133,6 @@ const Profile = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
     if (!e.target.files || e.target.files.length === 0) {
-      console.log('Inside if statement')
       return
     }
 
@@ -141,7 +158,7 @@ const Profile = () => {
 
   return (
     <div className="w-full h-[100vh] bg-white flex flex-col-reverse xl:flex-row p-2 gap-2">
-        <NaviagtionBar userProp={user}/>
+        <NavigationBar userProp={user} friendRequestsProp={loaderData.friendRequests}/>
 
         <div className="w-full h-[calc(100vh-6.5rem)] xl:h-auto bg-themeBgGray rounded-2xl flex justify-center items-center py-4">
             <div className="w-full max-h-[95%] flex flex-col items-center gap-5 overflow-y-auto no-scrollbar">
