@@ -23,5 +23,12 @@ GoSip isn’t just about chatting—it’s about staying connected in style. Wit
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 
+## Backend Repository
+
+You can check out the backend code here:  
+👉 [GoSip Backend on GitHub]((https://github.com/Aijazbir2010/GoSipBackend))
+
+---  
+
 Get ready to chat smarter, faster, and cooler with **GoSip**! 🚀💬
 
